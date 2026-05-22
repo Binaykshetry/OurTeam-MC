@@ -1,0 +1,6 @@
+{
+  "name": "OurTeam Plugin Studio",
+  "description": "Interactive designer and companion for the customizable OurTeam Minecraft teams plugin",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
