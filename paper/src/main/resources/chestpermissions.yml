@@ -1,0 +1,28 @@
+#  ==============================================================
+#   OurTeam Shared virtual Enderchest (Chest) Permission Settings
+#   Specify which organization ranks can perform actions inside the team container.
+#   Ranks available: OWNER, ADMIN, MEMBER
+#  ==============================================================
+
+chest-permissions:
+  # Open and view the contents inside the Team Enderchest shared container
+  open-chest:
+    - OWNER
+    - ADMIN
+    - MEMBER
+
+  # Store (deposit / put) items into empty slots of the shared container
+  store-items:
+    - OWNER
+    - ADMIN
+    - MEMBER
+
+  # Withdraw (take / pull) items out or empty slots from the shared container
+  take-items:
+    - OWNER
+    - ADMIN
+
+  # Purchase slot/size extensions or upgrade the general chest container
+  upgrade-slots:
+    - OWNER
+    - ADMIN

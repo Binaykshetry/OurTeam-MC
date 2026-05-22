@@ -1,0 +1,54 @@
+#  ==============================================================
+#   OurTeam Premium Messages Configuration
+#   Customized with sleek, modern RGB / Hex gradients.
+#   All messages support standard Minecraft legacy formats (&a, &b)
+#   AND modern hexadecimal colors (&#RRGGBB, <#RRGGBB>, #RRGGBB)
+#  ==============================================================
+
+# Global prefix for plugin-centric messaging
+prefix: "<#4facfe>&lOurTeam <#00f2fe>&l»&r "
+
+# Core Permissions & Warnings
+no-permission: "<#f64f59>❗ You do not have the authorization required to execute this command."
+only-players: "<#f64f59>❗ This command is exclusively reserved for in-game players."
+
+# Team Lifecycle Events
+team-created: "<#42275a>👥 <#7303c0>Successfully created team <#ec38bc>&l{team}<#7303c0>! Set a home using <#fdeff9>&l/team sethome&a."
+team-disbanded: "<#f12711>&l⚠️ Your team has been forcefully disbanded."
+team-already-exists: "<#f64f59>⚠️ Ah! A guild or team with that name already exists on this realm."
+
+# Roster Status Alerts
+not-in-team: "<#f64f59>❌ You must be affiliated with a team to utilize this feature."
+already-in-team: "<#f64f59>❌ You are already on a roster! Leave or disband your current team first."
+player-not-found: "<#f64f59>🧐 Specified player could not be located in this realm."
+
+# Invitations & Connections
+player-invited: "<#a8c0ff>✉️ You have invited <#3f2b96>&l{player} <#a8c0ff>to unite with your team. They have 1 minute to accept!"
+invited-by: "<#12c2e9>✉️ You've been summoned to join <#c471ed>&l{team}<#12c2e9>! Accept using <#f64f59>&l/team accept {team}<#12c2e9>."
+invite-expired: "<#f64f59>⏳ Your invitation to join <#e9d362>{team} <#f64f59>has expired or does not exist."
+player-joined: "<#11998e>🎉 <#38ef7d>&l{player} <#11998e>has joined the team! Welcome them to the roster."
+
+# Leave / Kicking Interactions
+player-left: "<#ff4b1f>💨 <#1fddff>&l{player} <#ff4b1f>has departed from your team."
+left-success: "<#ff4b1f>💨 You have successfully departed from your team."
+cannot-leave-owner: "<#f64f59>❌ As the owner, you cannot simply leave. Transfer ownership or disband the team."
+cannot-kick-self: "<#f64f59>❌ You cannot expel yourself from your own team."
+player-kicked: "<#ff4b1f>🥾 <#1fddff>&l{player} <#ff4b1f>has been forcefully expelled from the team roster."
+kicked-success: "<#ff4b1f>🥾 You have been forcefully expelled from your previous team."
+no-invite: "<#f64f59>❌ You have no active invitation requests from that team."
+
+# Admin and Systems
+config-reloaded: "<#11998e>💾 <#38ef7d>&lOurTeam <#11998e>configuration and premium messages loaded successfully."
+
+# Protected Interventions
+cannot-hurt-teammate: "<#f12711>🛡️ PvP is currently disabled between teammates!"
+friendly-fire-toggle: "<#4facfe>⚔️ Friendly fire protection has been toggled to <#00f2fe>&l{state}&r."
+chat-channel-toggled: "<#a8c0ff>💬 Your primary chat focus has been toggled to <#3f2b96>&l{state}&r."
+
+# Home-points and Teleportation
+team-home-set: "<#11998e>🏡 Team location <#38ef7d>&l{team} <#11998e>successfully set to your current spot!"
+team-home-none: "<#f64f59>🏡 Your team has not selected a home base yet."
+teleporting-home: "<#4facfe>🔮 Initiating teleport to team home... Stand still for <#00f2fe>&l3 seconds&r."
+
+# Command validation
+invalid-arguments: "<#f64f59>❓ Invalid syntax. Proper format: <#e9d362>&l{usage}"

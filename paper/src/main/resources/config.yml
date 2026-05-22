@@ -1,0 +1,383 @@
+#  =============================================================================
+#   __________              ___________                     
+#   \_____  _ \  __ ________\__    ___/___ _____    _____   
+#    /   |   \  |  |  \_  __ \|    |_/ __ \\__  \  /     \  
+#   /    |    \  |  |  /|  | \/|    |\  ___/ / __ \|  Y Y  \ 
+#   \_______  /______(  |__|   |____| \___  >____  /__|_|  / 
+#           \/                              \/     \/      \/  
+#
+#   OurTeam - The Ultimate Guild & Team System for Minecraft
+#   Fully customizable, supporting modern hexadecimal RGB color coding,
+#   Vault economy integration, LuckPerms permissions, custom Enderchests,
+#   named Team Warps, Leveling systems, and robust battle protection.
+#  =============================================================================
+
+# Core Application Settings
+system-settings:
+  # Toggle debugging outputs in the console. Useful for finding configuration errors.
+  debug-mode: false
+  
+  # Frequency at which the team cache is compiled and saved to disk (in minutes).
+  autosave-interval: 10
+  
+  # Specify the locale for dates and times used in UI logs
+  date-format: "yyyy/MM/dd HH:mm:ss"
+
+# Roster & Recruitment Guidelines
+team-settings:
+  # The default maximum size of any team roster. Use -1 to grant completely unlimited slots.
+  # Can be overridden by LuckPerms permission blocks or dynamic economic upgrades.
+  max-players-per-team: 8
+  
+  # Dynamic roster upgrade configuration using Vault economy.
+  roster-upgrades:
+    enabled: true
+    # Maximum size a guild can be upgraded to.
+    absolute-limit: 32
+    # Standard formula pricing structure: base_cost * current_member_slots_limit
+    multiplier: 1500.0
+
+  # Minimum characters required to register a brand-new team identity.
+  min-name-length: 3
+  
+  # Maximum length of a team name. Keep short to ensure Chat formats clean.
+  max-name-length: 12
+  
+  # Name restrictions (RegEx pattern configuration).
+  name-regex: "^[a-zA-Z0-9_\u4e00-\u9fa5]+$"
+  
+  # Blocked keywords which team names must never contain.
+  blocked-names:
+    - admin
+    - staff
+    - owner
+    - system
+    - helper
+    - operator
+    - console
+    - builder
+    - moderator
+    - fuck
+    - shit
+    - bitch
+
+  # Creation Cooldowns (In seconds) to prevent command spam or server overhead.
+  creation-cooldown: 300
+
+  # Automatic curation: Auto-disband teams when all members have been idle for X days.
+  # Use -1 to disable auto-cleanup completely.
+  disband-inactive-after-days: 30
+
+# Advanced Chat & Social Systems
+chat-settings:
+  # Default formatting utilized for internal team chat communications.
+  # Supported placeholders: {player}, {team}, {message}
+  # Supports premium hex codes seamlessly (e.g. &#12c2e9, <#4facfe>)
+  team-chat-format: "<#00f2fe>[Team Chat] <#4facfe>{player}<#8a9ba8>: <#eef6fc>{message}"
+  
+  # Prefix placed in the public global chat ifOurTeam hooks your chat managers.
+  # Supported placeholders: {team}
+  public-name-prefix: "<#4facfe>[{team}]&r "
+
+  # Enable dynamic hover text formatting inside team chat channels.
+  hover-options:
+    enabled: true
+    text:
+      - "<#4facfe>&l{team_name} Information"
+      - "&8------------------------"
+      - "<#a8c0ff>Owner: &r{owner_name}"
+      - "<#a8c0ff>Roster Size: &r{members_count}"
+      - "<#a8c0ff>Kills/Deaths: &r&e{kills}&7/&c{deaths}"
+      - "&8------------------------"
+
+  # Anti-spam interval for internal team chat channels (in milliseconds).
+  chat-cooldown-ms: 500
+
+# Nameplates & Leaderboards Presentation
+display-settings:
+  # Method to append team designations on the in-game tab list.
+  # Supported Values:
+  # - PREFIX: Renders team tags BEFORE the username.
+  # - SUFFIX: Renders team tags AFTER the username.
+  # - NONE: Disables tab additions completely.
+  tab-display-method: PREFIX
+  
+  # Formatting tags utilized on the TAB list.
+  tab-format: "<#4facfe>[{team}] &f"
+  
+  # If true, Above-Head Nametags of players will show their team name prefix.
+  show-nametags: true
+
+  # Formats for above-head visual display
+  nametag-format: "<#00f2fe>[{team}] <#f12711>&l"
+
+  # Scoreboard Toggles
+  sidebar-scoreboard:
+    enabled: true
+    # Header format of the sidebar
+    title: "<#4facfe>&lOurTeam Status"
+    # Lines layout. Maximum 15 lines. Supports brackets, colors and hex commands.
+    lines:
+      - "&8========================"
+      - " &7Player: <#00f2fe>{player}"
+      - " &7Your Guild: <#4facfe>{team_name}"
+      - " &7Role: &e{role}"
+      - "&8------------------------"
+      - " &7Roster: &f{team_members_online}&7/&f{team_members_count}"
+      - " &7Guild Level: <#38ef7d>{team_level}"
+      - " &7Guild Bank: <#11998e>${team_balance}"
+      - " &7Guild K/D: &a{team_kills}&7/&c{team_deaths}"
+      - "&8========================"
+    # Update rate in Minecraft ticks (20 ticks = 1 second)
+    refresh-rate: 100
+
+# PvP Damage & Friendly Fire Regulators
+pvp-settings:
+  # Default state of friendly fire protection for newly established teams.
+  # If true, allies can damage each other upon registration.
+  default-friendly-fire: false
+
+  # Action to trigger when friendly fire block is active.
+  # Can be: "CANCEL" (strictly block damage) or "MULTIPY" (allow damage but scale it down)
+  protection-type: CANCEL
+
+  # Used only if protection-type is set to MULTIPY. Scale factor of damage (0.5 = half damage).
+  friendly-damage-scale: 0.25
+
+  # Protection depth modifiers
+  advanced-protections:
+    # Stop splash potions from applying negative status effects to teammates.
+    block-negative-potion-harm: true
+    # Prevent teammates from igniting or blowing up other teammates with TNT.
+    block-tnt-explosion-allies: true
+    # Stop tamed wolves/animals of teammates from physical attack targeting.
+    block-pet-targeting: true
+    # Prevent arrows from piercing teammates' armor if they hit.
+    block-projectile-harm: true
+
+# Advanced Economy & Integration
+economy-settings:
+  # Leverage the Vault Economy systems for guild interactions.
+  use-vault: true
+
+  # Creation cost to set up a brand-new Team roster.
+  cost-to-create: 500.0
+
+  # Modification surcharge to rename an active team.
+  cost-to-rename: 250.0
+
+  # Fine charging threshold if the Owner disbands the team.
+  cost-to-disband: 0.0
+
+  # Surcharges for creating named Team Warp locations.
+  cost-per-warp-creation: 100.0
+
+  # Daily taxation system: taxes teams in game money.
+  daily-tax:
+    enabled: false
+    charge-amount: 50.0
+    # True if the entire team splits the cost, false if it is taken directly from the Team Bank.
+    deduct-from-bank: true
+
+# Multi-Homes & named Warps System
+cooldowns-and-teleportation:
+  # Teleport delay (wait time) after running /team home or warping (in seconds).
+  warp-warmup-seconds: 3
+
+  # Cooldown between successive usages of Homes/Warps (in seconds).
+  teleport-cooldown: 45
+
+  # Cancel warp instantly if the user shifts coordinate positions.
+  cancel-on-movement: true
+
+  # Cancel teleport action if the player takes physical damage from entities.
+  cancel-on-damage: true
+
+  # Particle effect designs emitted around players during teleport sequencing.
+  # Supported Types: PORTAL, CLOUD, SPELL, END_ROD, WITCH, NONE
+  teleport-particle: "PORTAL"
+
+  # Sound emitted when player teleports successfully.
+  # Supported Types (Vanilla Spigot names): ENTITY_ENDERMAN_TELEPORT, BLOCK_PORTAL_TRAVEL, NONE
+  teleport-sound: "ENTITY_ENDERMAN_TELEPORT"
+
+  # Limits for maximum homes per team. Overridden by permissions 'ourteam.homes.X'.
+  max-homes-per-team: 3
+
+# Virtual Enderchest Shared Inventories
+enderchest-settings:
+  # Toggle to allow virtual Enderchest sharing. Access via /team echest.
+  enabled: true
+
+  # Lock checking: Prevent opening the chest if the team is currently engaged in PvP combat.
+  lock-during-combat: true
+
+  # Blocking rules to restrict inventory exploit risk or security.
+  disallowed-materials:
+    - SHULKER_BOX
+    - BEDROCK
+    - TNT
+    - NETHERITE_CHESTPLATE
+    - NETHERITE_SWORD
+
+  # Standard rows configurations. Can scale from 1 (9 slots) to 6 (54 slots).
+  default-rows: 3
+
+  # Buy rows using Vault money
+  upgradeable-sizes:
+    enabled: true
+    prices:
+      row-4: 5000.0
+      row-5: 12000.0
+      row-6: 25000.0
+
+# Passive Team Levels & RPG Buffs
+leveling-system:
+  # Enable dynamic team levelling based on activity and stats.
+  enabled: true
+
+  # Experience algorithms configuration
+  experience-sources:
+    # XP awarded to team when a member kills a vanilla monster.
+    kill-monster: 10
+    # XP awarded to team when a member is victorious in PvP over non-teammates.
+    kill-player: 50
+    # XP awarded per block of ore broken (Gold/Diamond/Emerald/Netherite/Iron).
+    break-ore: 5
+    # XP passive reward per 15 minutes of dynamic player activity in the world.
+    passive-online-xp: 20
+
+  # Level progression formula: base_xp * level^constant
+  formula:
+    base-xp: 1000
+    exponent: 1.5
+
+  # Passive potion buffs given to players based on their Team Level.
+  # Potion format: POTION_EFFECT_TYPE:POTION_AMPLIFIER
+  level-rewards:
+    level-5:
+      buffs:
+        - "SPEED:0"       # Speed I status
+      display-badge: "✪"
+    level-10:
+      buffs:
+        - "SPEED:0"
+        - "FAST_DIGGING:0" # Haste I status
+      display-badge: "✪✪"
+    level-15:
+      buffs:
+        - "SPEED:1"       # Speed II
+        - "FAST_DIGGING:0"
+        - "DAMAGE_RESISTANCE:0" # Resistance I
+      display-badge: "⭐"
+
+# Storage Architectures
+storage:
+  # Core data storage backend type.
+  # Supported backends:
+  # - JSON (Zero setup, easy-to-use local files located in metadata directories)
+  # - SQLITE (Slightly faster standalone file databank)
+  # - MYSQL (Highly recommended for BungeeCord, Velocity or multi-instance networks)
+  type: JSON
+
+  # Credentials used only when storage type is MYSQL
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "ourteam_db"
+    username: "administrator"
+    password: "secure_password_here"
+    # Custom options to fine-tune network clusters
+    use-ssl: true
+    pool-properties:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout-ms: 30000
+      idle-timeout-ms: 600000
+      max-lifetime-ms: 1800000
+
+# Audits, Webhooks & Logs
+audit-and-logging:
+  # Enable separate log compilation in plugin directory for user creations/deletions.
+  log-file-enabled: true
+
+  # Webhook system to output team events to modern Discord channels
+  discord-webhook:
+    enabled: false
+    url: "https://discord.com/api/webhooks/dummy_channel_hook"
+    username: "OurTeam-Notifier"
+    avatar: "https://minotar.net/helm/Steve/100.png"
+    events:
+      on-create: true
+      on-disband: true
+      on-kick: true
+      on-level-up: true
+
+# Team Bank Money & Economy (Vault Dependency Required)
+# =============================================================================
+team-bank:
+  # Enable Team Bank functionality & commands (/team bank)
+  enable: true
+
+  # Dynamic passive daily/interval interest rate (Percentage: scalar 1.0% to 15.0%)
+  # When players keep money in the bank, they earn interest. More money = more returns.
+  interest-rate: 5.0
+
+  # Max currency amount that can be passively gained/payout capped per team in a single interest cycle.
+  # "The max Amount that can come is Around 15. More than 15 it can't go."
+  max-accrual: 15.0
+
+  # The repeating schedule interval to credit interest rewards (in ticks)
+  # Default: 12000 ticks = 10 minutes. Set lower for more frequent ticks,
+  # or set 24000 ticks (20 minutes = 1 Minecraft Day cycle) for daily rewards.
+  interest-interval-ticks: 12000
+
+# Advanced Team Score System
+# =============================================================================
+team-score:
+  # Foundational score granted for each active player profile registered in the team roster.
+  points-per-active-member: 50
+  
+  # Time (in hours) since the member's last network login before they are flagged inactive.
+  # Inactive members contribute 0 points to the team's score.
+  active-member-timeframe-hours: 24
+  
+  # Amount of Vault cash deposited in the team bank required to earn 1 permanent TeamScore point.
+  # E.g., at 10000.0, every $10,000 in bank balance translates to +1 score point.
+  currency-per-point: 10000.0
+  
+  # Points awarded to the team score when a member scores a PvP kill on an enemy team player.
+  points-per-kill: 5
+  
+  # Points subtracted from the team score when a member suffers a PvP death by an enemy player.
+  points-lost-per-death: 2
+  
+  # Anti-spam farming cooldown (in seconds) between sequential kills on the same victim.
+  # Kills within this threshold are dynamic-spam flagged and gain 0 points.
+  spam-threshold-seconds: 60
+
+# Sub-command Feature Toggles
+# =============================================================================
+# Set to true-or-on / false-or-off to configure command access.
+# If a feature is turned off, the command will deny action.
+command-toggles:
+  create: true
+  invite: true
+  join: true
+  request: true
+  leave: true
+  kick: true
+  disband: true
+  friendlyfire: true
+  promote: true
+  demote: true
+  msg: true
+  echest: true
+  bank: true
+  warp: true
+  setwarp: true
+  delwarp: true
+  chat: true
+  info: true
+  list: true
+

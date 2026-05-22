@@ -1,0 +1,63 @@
+#  ==============================================================
+#   OurTeam Premium Sub-Command/Action Permission Settings
+#   Specify which organization ranks are authorized to use each action.
+#   Ranks available: OWNER, ADMIN, MEMBER
+#  ==============================================================
+
+permissions:
+  # Inviting external players to join this team
+  invite:
+    - OWNER
+    - ADMIN
+
+  # Expelling (kicking) a member from the team
+  kick:
+    - OWNER
+    - ADMIN
+
+  # Setting a team home or adding/changing default warp structures
+  sethome:
+    - OWNER
+    - ADMIN
+
+  # Deleting a set team home location
+  delhome:
+    - OWNER
+    - ADMIN
+
+  # Setting a shared team warp
+  setwarp:
+    - OWNER
+    - ADMIN
+
+  # Deleting a shared team warp
+  delwarp:
+    - OWNER
+    - ADMIN
+
+  # Toggling friendly fire pvp systems on or off
+  pvp:
+    - OWNER
+    - ADMIN
+
+  # Accessing / Opening the virtual shared enderchest container
+  echest:
+    - OWNER
+    - ADMIN
+    - MEMBER
+
+  # Upgrading roster limits, container spaces, or buying perks
+  upgrade:
+    - OWNER
+    - ADMIN
+
+  # Accessing and interacting with the team bank Vault
+  bank:
+    - OWNER
+    - ADMIN
+    - MEMBER
+
+  # Accepting pending join requests from players
+  acceptrequest:
+    - OWNER
+    - ADMIN

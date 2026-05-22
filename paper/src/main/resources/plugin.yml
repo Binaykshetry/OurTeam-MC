@@ -1,0 +1,26 @@
+name: OurTeam
+version: 1.0.0
+main: com.ourteam.OurTeam
+api-version: 1.20
+description: Robust and highly customizable Minecraft teams plugin inspired by BetterTeams.
+author: OurTeamDev
+softdepend: [Vault, LuckPerms, PlaceholderAPI]
+
+commands:
+  team:
+    description: Core command for OurTeam player actions.
+    aliases: [t, teams]
+    usage: /team [create|join|invite|accept|leave|kick|chat|friendlyfire|home|sethome|list|info|disband|bank]
+  teamadmin:
+    description: Admin commands to override and manage teams.
+    aliases: [ta, adminteam, adteam, teamsadmin]
+    permission: ourteam.admin
+    usage: /teamadmin [reload|disband|forcejoin|forcekick|setowner]
+
+permissions:
+  ourteam.use:
+    description: Allows players to use standard team commands.
+    default: true
+  ourteam.admin:
+    description: Allows administrators to manage all teams and reload configs.
+    default: op
