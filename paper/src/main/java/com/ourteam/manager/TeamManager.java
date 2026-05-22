@@ -86,6 +86,10 @@ public class TeamManager {
         return teams.values();
     }
 
+    public Map<UUID, Team> getTeams() {
+        return teams;
+    }
+
     public void addPlayerToTeam(Player player, Team team) {
         team.addMember(player.getUniqueId());
         playerTeamMap.put(player.getUniqueId(), team.getId());
