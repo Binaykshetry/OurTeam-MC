@@ -234,14 +234,11 @@ public class GUIListener implements Listener {
                     }
                     plugin.getGuiManager().openRequestsMenu(player, team);
                     break;
-                case 21: // Homes & Warps list
-                    plugin.getGuiManager().openHomesWarpsMenu(player, team);
-                    break;
-                case 22: // Leave Team Option
+                case 21: // Leave Team Option
                     player.closeInventory();
                     player.performCommand("team leave");
                     break;
-                case 23: // Team Ban / Disband Option (chat confirmation)
+                case 22: // Team Ban / Disband Option (chat confirmation)
                     if (!team.getOwner().equals(player.getUniqueId())) {
                         player.sendMessage(plugin.colorize("&cOnly the Team Owner has the authority to disband or ban this team."));
                         break;
@@ -250,7 +247,7 @@ public class GUIListener implements Listener {
                     PlayerListener.pendingDisbands.add(player.getUniqueId());
                     player.sendMessage(plugin.colorize("&e[Confirmation] Are you sure you want ban the team? if yes type yes or for no type no"));
                     break;
-                case 49: // Go back arrow
+                case 26: // Go back arrow
                     plugin.getGuiManager().openMainMenu(player, team);
                     break;
             }
@@ -382,16 +379,9 @@ public class GUIListener implements Listener {
                 return;
             }
 
-            int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-            int matchedIdx = -1;
-            for (int i = 0; i < slots.length; i++) {
-                if (slots[i] == slot) {
-                    matchedIdx = i;
-                    break;
-                }
-            }
+            int matchedIdx = slot - 9;
 
-            if (matchedIdx != -1) {
+            if (matchedIdx >= 0 && matchedIdx < 9) {
                 java.util.List<String> homeNames = new java.util.ArrayList<>(team.getMultiHomes().keySet());
                 if (matchedIdx < homeNames.size()) {
                     String homeName = homeNames.get(matchedIdx);
@@ -405,11 +395,7 @@ public class GUIListener implements Listener {
                         plugin.getTeamManager().saveAll();
                         player.sendMessage(plugin.colorize("&eSuccessfully deleted team home '&6" + homeName + "&e'."));
                         if (team.getMultiHomes().isEmpty()) {
-                            if (team.getMultiWarps().isEmpty()) {
-                                plugin.getGuiManager().openMainMenu(player, team);
-                            } else {
-                                plugin.getGuiManager().openHomesWarpsMenu(player, team);
-                            }
+                            plugin.getGuiManager().openHomesWarpsMenu(player, team);
                         } else {
                             plugin.getGuiManager().openHomesListMenu(player, team);
                         }
@@ -428,16 +414,9 @@ public class GUIListener implements Listener {
                 return;
             }
 
-            int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-            int matchedIdx = -1;
-            for (int i = 0; i < slots.length; i++) {
-                if (slots[i] == slot) {
-                    matchedIdx = i;
-                    break;
-                }
-            }
+            int matchedIdx = slot - 9;
 
-            if (matchedIdx != -1) {
+            if (matchedIdx >= 0 && matchedIdx < 9) {
                 java.util.List<String> warpNames = new java.util.ArrayList<>(team.getMultiWarps().keySet());
                 if (matchedIdx < warpNames.size()) {
                     String warpName = warpNames.get(matchedIdx);
@@ -451,11 +430,7 @@ public class GUIListener implements Listener {
                         plugin.getTeamManager().saveAll();
                         player.sendMessage(plugin.colorize("&eSuccessfully deleted team warp '&6" + warpName + "&e'."));
                         if (team.getMultiWarps().isEmpty()) {
-                            if (team.getMultiHomes().isEmpty()) {
-                                plugin.getGuiManager().openMainMenu(player, team);
-                            } else {
-                                plugin.getGuiManager().openHomesWarpsMenu(player, team);
-                            }
+                            plugin.getGuiManager().openHomesWarpsMenu(player, team);
                         } else {
                             plugin.getGuiManager().openWarpsListMenu(player, team);
                         }
