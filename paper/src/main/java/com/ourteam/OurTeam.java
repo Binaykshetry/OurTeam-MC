@@ -66,7 +66,9 @@ public final class OurTeam extends JavaPlugin {
         this.guiManager = new com.ourteam.gui.TeamGUIManager(this);
 
         // Register Commands
-        getCommand("team").setExecutor(new TeamCommand(this));
+        TeamCommand teamCmd = new TeamCommand(this);
+        getCommand("team").setExecutor(teamCmd);
+        getCommand("team").setTabCompleter(teamCmd);
         AdminCommand adminCmd = new AdminCommand(this);
         getCommand("teamadmin").setExecutor(adminCmd);
         getCommand("teamadmin").setTabCompleter(adminCmd);
@@ -375,5 +377,114 @@ public final class OurTeam extends JavaPlugin {
 
     public java.util.Set<java.util.UUID> getChatSpyPlayers() {
         return chatSpyPlayers;
+    }
+
+    private final java.util.Map<java.util.UUID, org.bukkit.scheduler.BukkitTask> activeTeleports = new java.util.HashMap<>();
+    private final java.util.Map<java.util.UUID, java.lang.Long> teleportCooldowns = new java.util.HashMap<>();
+
+    public java.util.Map<java.util.UUID, org.bukkit.scheduler.BukkitTask> getActiveTeleports() {
+        return activeTeleports;
+    }
+
+    public void startTeleport(Player player, org.bukkit.Location destination, String locationName, boolean isWarp) {
+        // Cooldown check
+        long cooldownSecs = getConfig().getLong("cooldowns-and-teleportation.teleport-cooldown", 45L);
+        java.util.UUID uuid = player.getUniqueId();
+        if (teleportCooldowns.containsKey(uuid)) {
+            long remaining = (teleportCooldowns.get(uuid) + (cooldownSecs * 1000L)) - System.currentTimeMillis();
+            if (remaining > 0) {
+                player.sendMessage(colorize("&c[OurTeam] Teleport cooldown is active! Please wait " + (remaining / 1000L + 1) + "s."));
+                return;
+            }
+        }
+
+        // Cancel any existing teleport before starting a new one
+        cancelTeleport(player, false);
+
+        int warmupSecs = getConfig().getInt("cooldowns-and-teleportation.warp-warmup-seconds", 5);
+        if (warmupSecs <= 0) {
+            // Instant teleport
+            executeTeleport(player, destination, locationName);
+            teleportCooldowns.put(uuid, System.currentTimeMillis());
+            return;
+        }
+
+        org.bukkit.Location startLoc = player.getLocation().clone();
+        
+        // Schedule a repeating task that ticks every second (20 ticks)
+        org.bukkit.scheduler.BukkitRunnable runnable = new org.bukkit.scheduler.BukkitRunnable() {
+            int secondsLeft = warmupSecs;
+
+            @Override
+            public void run() {
+                if (!player.isOnline()) {
+                    cancelTeleport(player, false);
+                    return;
+                }
+
+                // Check movement as a backup
+                if (getConfig().getBoolean("cooldowns-and-teleportation.cancel-on-movement", true)) {
+                    org.bukkit.Location curLoc = player.getLocation();
+                    if (startLoc.getWorld() != curLoc.getWorld() || startLoc.distanceSquared(curLoc) > 0.1) {
+                        cancelTeleport(player, false, true);
+                        return;
+                    }
+                }
+
+                if (secondsLeft <= 0) {
+                    executeTeleport(player, destination, locationName);
+                    cancelTeleport(player, false, false);
+                    teleportCooldowns.put(uuid, System.currentTimeMillis());
+                    return;
+                }
+
+                // Emit particles
+                String particleType = getConfig().getString("cooldowns-and-teleportation.teleport-particle", "PORTAL");
+                if (!"NONE".equalsIgnoreCase(particleType)) {
+                    try {
+                        org.bukkit.Particle particle = org.bukkit.Particle.valueOf(particleType.toUpperCase());
+                        player.getWorld().spawnParticle(particle, player.getLocation().add(0, 1, 0), 15, 0.4, 0.5, 0.4, 0.1);
+                    } catch (Exception ignored) {}
+                }
+
+                // Per-second countdown message
+                player.sendMessage(colorize("&aTeleporting to " + (isWarp ? "warp" : "home") + " '&e" + locationName + "&a' in &e" + secondsLeft + " &aseconds... Do not move!"));
+                secondsLeft--;
+            }
+        };
+
+        org.bukkit.scheduler.BukkitTask task = runnable.runTaskTimer(this, 0L, 20L);
+        activeTeleports.put(uuid, task);
+    }
+
+    private void executeTeleport(Player player, org.bukkit.Location loc, String locationName) {
+        player.teleport(loc);
+        player.sendMessage(colorize("&aTeleported successfully!"));
+
+        // Sound effect
+        String soundType = getConfig().getString("cooldowns-and-teleportation.teleport-sound", "ENTITY_ENDERMAN_TELEPORT");
+        if (!"NONE".equalsIgnoreCase(soundType)) {
+            try {
+                org.bukkit.Sound sound = org.bukkit.Sound.valueOf(soundType.toUpperCase());
+                player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    public void cancelTeleport(Player player, boolean isDamage) {
+        cancelTeleport(player, isDamage, false);
+    }
+
+    public void cancelTeleport(Player player, boolean isDamage, boolean isMovement) {
+        java.util.UUID uuid = player.getUniqueId();
+        if (activeTeleports.containsKey(uuid)) {
+            activeTeleports.get(uuid).cancel();
+            activeTeleports.remove(uuid);
+            if (isDamage) {
+                player.sendMessage(colorize("&c[OurTeam] Teleportation cancelled due to taking physical damage!"));
+            } else if (isMovement) {
+                player.sendMessage(colorize("&c[OurTeam] Teleportation cancelled: You moved!"));
+            }
+        }
     }
 }
