@@ -474,24 +474,25 @@ public class Team {
         if (r == null) {
             return "MEMBER";
         }
-        if ("MODERATOR".equalsIgnoreCase(r)) {
-            return "ADMIN";
-        }
-        return r;
+        return r.toUpperCase();
     }
 
     public boolean isAdminOrHigher(UUID uuid) {
         String r = getRole(uuid);
-        return "ADMIN".equalsIgnoreCase(r) || "OWNER".equalsIgnoreCase(r) || "MODERATOR".equalsIgnoreCase(r);
+        return "ADMIN".equalsIgnoreCase(r) || "OWNER".equalsIgnoreCase(r);
     }
 
     public boolean isModeratorOrHigher(UUID uuid) {
-        return isAdminOrHigher(uuid);
+        String r = getRole(uuid);
+        return "ADMIN".equalsIgnoreCase(r) || "OWNER".equalsIgnoreCase(r) || "MODERATOR".equalsIgnoreCase(r);
     }
 
     public boolean promote(UUID uuid) {
         String role = getRole(uuid);
         if ("MEMBER".equalsIgnoreCase(role)) {
+            getRoles().put(uuid.toString(), "MODERATOR");
+            return true;
+        } else if ("MODERATOR".equalsIgnoreCase(role)) {
             getRoles().put(uuid.toString(), "ADMIN");
             return true;
         }
@@ -500,8 +501,11 @@ public class Team {
 
     public boolean demote(UUID uuid) {
         String role = getRole(uuid);
-        if ("ADMIN".equalsIgnoreCase(role) || "MODERATOR".equalsIgnoreCase(role)) {
-            getRoles().put(uuid.toString(), "MEMBER");
+        if ("ADMIN".equalsIgnoreCase(role)) {
+            getRoles().put(uuid.toString(), "MODERATOR");
+            return true;
+        } else if ("MODERATOR".equalsIgnoreCase(role)) {
+            getRoles().remove(uuid.toString());
             return true;
         }
         return false;
