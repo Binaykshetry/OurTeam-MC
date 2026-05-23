@@ -336,15 +336,15 @@ team-bank:
 # =============================================================================
 team-score:
   # Foundational score granted for each active player profile registered in the team roster.
-  points-per-active-member: 50
+  points-per-active-member: 10
   
   # Time (in hours) since the member's last network login before they are flagged inactive.
   # Inactive members contribute 0 points to the team's score.
   active-member-timeframe-hours: 24
   
   # Amount of Vault cash deposited in the team bank required to earn 1 permanent TeamScore point.
-  # E.g., at 10000.0, every $10,000 in bank balance translates to +1 score point.
-  currency-per-point: 10000.0
+  # E.g., at 2500.0, every $5,000 in bank balance translates to 2 points (+1 point per $2,500).
+  currency-per-point: 2500.0
   
   # Points awarded to the team score when a member scores a PvP kill on an enemy team player.
   points-per-kill: 5
