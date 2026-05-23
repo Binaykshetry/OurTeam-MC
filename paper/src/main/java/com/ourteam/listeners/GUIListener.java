@@ -117,8 +117,8 @@ public class GUIListener implements Listener {
                 case 11: // Members list details sub-gui
                     plugin.getGuiManager().openMembersMenu(player, team);
                     break;
-                case 12: // Join Requests List Sub-menu
-                    plugin.getGuiManager().openRequestsMenu(player, team);
+                case 12: // Ally Diplomacy Sub-menu
+                    plugin.getGuiManager().openAlliesMenu(player, team);
                     break;
                 case 13: // Open Homes & Warps Menu
                     if (team.getMultiHomes().isEmpty() && team.getMultiWarps().isEmpty()) {
@@ -155,8 +155,8 @@ public class GUIListener implements Listener {
                         break;
                     }
                     team.setFriendlyFire(!team.isFriendlyFireEnabled());
-                    player.sendMessage(plugin.colorize("&a&l[Settings] &fFriendly Fire has been set to: " + 
-                        (team.isFriendlyFireEnabled() ? "&a&lENABLED" : "&c&lDISABLED")));
+                    player.sendMessage(plugin.colorize("&a[Settings] &fFriendly Fire has been set to: " + 
+                        (team.isFriendlyFireEnabled() ? "&aENABLED" : "&cDISABLED")));
                     plugin.getTeamManager().saveTeam(team);
                     // Refresh inventory
                     plugin.getGuiManager().openSettingsMenu(player, team);
@@ -167,8 +167,8 @@ public class GUIListener implements Listener {
                         break;
                     }
                     team.setPayToggle(!team.isPayToggle());
-                    player.sendMessage(plugin.colorize("&a&l[Settings] &fTeamPay deposits have been set to: " + 
-                        (team.isPayToggle() ? "&a&lENABLED" : "&c&lDISABLED")));
+                    player.sendMessage(plugin.colorize("&a[Settings] &fTeamPay deposits have been set to: " + 
+                        (team.isPayToggle() ? "&aENABLED" : "&cDISABLED")));
                     plugin.getTeamManager().saveTeam(team);
                     plugin.getGuiManager().openSettingsMenu(player, team);
                     break;
@@ -178,8 +178,8 @@ public class GUIListener implements Listener {
                         break;
                     }
                     team.setEchestLocked(!team.isEchestLocked());
-                    player.sendMessage(plugin.colorize("&a&l[Settings] &fTeam Enderchest access lock is now: " + 
-                        (team.isEchestLocked() ? "&c&lLOCKED &7(Admin/Owner Only)" : "&a&lUNLOCKED &7(All Members)")));
+                    player.sendMessage(plugin.colorize("&a[Settings] &fTeam Enderchest access lock is now: " + 
+                        (team.isEchestLocked() ? "&cLOCKED &7(Admin/Owner Only)" : "&aUNLOCKED &7(All Members)")));
                     plugin.getTeamManager().saveTeam(team);
                     plugin.getGuiManager().openSettingsMenu(player, team);
                     break;
@@ -189,8 +189,8 @@ public class GUIListener implements Listener {
                         break;
                     }
                     team.setOpenJoin(!team.isOpenJoin());
-                    player.sendMessage(plugin.colorize("&a&l[Settings] &fTeam Join Policy has been set to: " + 
-                        (team.isOpenJoin() ? "&a&lOPEN JOIN (direct entry)" : "&c&lINVITE/APPLICATION REQUIRED")));
+                    player.sendMessage(plugin.colorize("&a[Settings] &fTeam Join Policy has been set to: " + 
+                        (team.isOpenJoin() ? "&aOPEN JOIN (direct entry)" : "&cINVITE/APPLICATION REQUIRED")));
                     plugin.getTeamManager().saveTeam(team);
                     plugin.getGuiManager().openSettingsMenu(player, team);
                     break;
@@ -200,8 +200,8 @@ public class GUIListener implements Listener {
                         break;
                     }
                     team.setTeamChatEnabled(!team.isTeamChatEnabled());
-                    player.sendMessage(plugin.colorize("&a&l[Settings] &fTeam Chat channel is now: " + 
-                        (team.isTeamChatEnabled() ? "&a&lENABLED" : "&c&lDISABLED")));
+                    player.sendMessage(plugin.colorize("&a[Settings] &fTeam Chat channel is now: " + 
+                        (team.isTeamChatEnabled() ? "&aENABLED" : "&cDISABLED")));
                     plugin.getTeamManager().saveTeam(team);
                     plugin.getGuiManager().openSettingsMenu(player, team);
                     break;
@@ -211,46 +211,62 @@ public class GUIListener implements Listener {
                         break;
                     }
                     team.setMemberInviteEnabled(!team.isMemberInviteEnabled());
-                    player.sendMessage(plugin.colorize("&a&l[Settings] &fMember Inviting has been: " + 
-                        (team.isMemberInviteEnabled() ? "&a&lENABLED" : "&c&lDISABLED &7(Only admins can invite)")));
+                    player.sendMessage(plugin.colorize("&a[Settings] &fMember Inviting has been: " + 
+                        (team.isMemberInviteEnabled() ? "&aENABLED" : "&cDISABLED &7(Only admins can invite)")));
                     plugin.getTeamManager().saveTeam(team);
                     plugin.getGuiManager().openSettingsMenu(player, team);
                     break;
-                case 17: // Toggle Teammate Login alerts
+                case 19: // Toggle Teammate Login alerts (formerly 17)
                     if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                         player.sendMessage(plugin.colorize("&cOnly Team Admins or Owners can toggle Teammate Alerts."));
                         break;
                     }
                     team.setLoginAlertsEnabled(!team.isLoginAlertsEnabled());
-                    player.sendMessage(plugin.colorize("&a&l[Settings] &fTeammate Login notifications are now: " + 
-                        (team.isLoginAlertsEnabled() ? "&a&lENABLED" : "&c&lDISABLED")));
+                    player.sendMessage(plugin.colorize("&a[Settings] &fTeammate Login notifications are now: " + 
+                        (team.isLoginAlertsEnabled() ? "&aENABLED" : "&cDISABLED")));
                     plugin.getTeamManager().saveTeam(team);
                     plugin.getGuiManager().openSettingsMenu(player, team);
                     break;
-                case 22: // Go back arrow
+                case 20: // Join Requests List
+                    if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                        player.sendMessage(plugin.colorize("&cOnly Team Admins or Owners can manage Join Requests."));
+                        break;
+                    }
+                    plugin.getGuiManager().openRequestsMenu(player, team);
+                    break;
+                case 21: // Homes & Warps list
+                    plugin.getGuiManager().openHomesWarpsMenu(player, team);
+                    break;
+                case 22: // Leave Team Option
+                    player.closeInventory();
+                    player.performCommand("team leave");
+                    break;
+                case 23: // Team Ban / Disband Option (chat confirmation)
+                    if (!team.getOwner().equals(player.getUniqueId())) {
+                        player.sendMessage(plugin.colorize("&cOnly the Team Owner has the authority to disband or ban this team."));
+                        break;
+                    }
+                    player.closeInventory();
+                    PlayerListener.pendingDisbands.add(player.getUniqueId());
+                    player.sendMessage(plugin.colorize("&e[Confirmation] Are you sure you want ban the team? if yes type yes or for no type no"));
+                    break;
+                case 49: // Go back arrow
                     plugin.getGuiManager().openMainMenu(player, team);
                     break;
             }
         }
 
         else if ("members".equalsIgnoreCase(menu)) {
-            if (slot == 22) {
+            if (slot == 49) {
                 plugin.getGuiManager().openMainMenu(player, team);
                 return;
             }
 
-            int[] memberSlots = { 10, 11, 12, 13, 14, 15, 16 };
-            int foundIndex = -1;
-            for (int i = 0; i < memberSlots.length; i++) {
-                if (memberSlots[i] == slot) {
-                    foundIndex = i;
-                    break;
-                }
-            }
-
-            if (foundIndex != -1) {
+            if (slot >= 9 && slot <= 44) {
                 java.util.List<java.util.UUID> memberList = new java.util.ArrayList<>(team.getMembers());
-                if (foundIndex < memberList.size()) {
+                int foundIndex = slot - 9;
+                if (foundIndex >= 36) return; // safeguard within slots bounds
+                if (foundIndex >= 0 && foundIndex < memberList.size()) {
                     java.util.UUID targetUuid = memberList.get(foundIndex);
                     org.bukkit.OfflinePlayer targetPlayer = org.bukkit.Bukkit.getOfflinePlayer(targetUuid);
                     plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
@@ -463,53 +479,90 @@ public class GUIListener implements Listener {
                 return;
             }
 
-            if (slot == 11) {
-                // PROMOTE to ADMIN
-                if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                    player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can promote members."));
-                    return;
-                }
-                String role = team.getRole(targetUuid);
-                if ("MEMBER".equalsIgnoreCase(role)) {
-                    team.promote(targetUuid);
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&a&l[Roster] &e" + targetName + " &fhas been promoted to &b&lADMIN&f!"));
-                    Player tgt = org.bukkit.Bukkit.getPlayer(targetUuid);
-                    if (tgt != null) tgt.sendMessage(plugin.colorize("&a&l[OurTeam] &fYou have been promoted to &b&lADMIN &fof your team!"));
-                } else {
-                    player.sendMessage(plugin.colorize("&cError: This player is already Admin/Owner."));
-                }
-                plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
+            if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can manage member roles."));
+                return;
             }
 
-            else if (slot == 15) {
-                // DEMOTE or KICK
-                if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                    player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can demote/kick members."));
-                    return;
-                }
-                String role = team.getRole(targetUuid);
-                if ("ADMIN".equalsIgnoreCase(role) || "MODERATOR".equalsIgnoreCase(role)) {
-                    team.demote(targetUuid);
+            // Can't manage self or owner
+            if (targetUuid.equals(player.getUniqueId()) || targetUuid.equals(team.getOwner())) {
+                player.sendMessage(plugin.colorize("&cError: You cannot manage your own role or the team owner's role."));
+                return;
+            }
+
+            switch (slot) {
+                case 10: // Set ADMIN
+                    team.getRoles().put(targetUuid.toString(), "ADMIN");
                     plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&e&l[Roster] &e" + targetName + " &fhas been demoted to &7MEMBER&f."));
-                    Player tgt = org.bukkit.Bukkit.getPlayer(targetUuid);
-                    if (tgt != null) tgt.sendMessage(plugin.colorize("&c&l[OurTeam] &fYou have been demoted to &7MEMBER &fof your team."));
+                    player.sendMessage(plugin.colorize("&a[Roster] &b" + targetName + " &fhas been set to &b&lADMIN&f!"));
+                    Player tgtAdmin = org.bukkit.Bukkit.getPlayer(targetUuid);
+                    if (tgtAdmin != null) {
+                        tgtAdmin.sendMessage(plugin.colorize("&a[OurTeam] &fYou have been set to &b&lADMIN &fof your team!"));
+                    }
                     plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
-                } else {
-                    team.removeMember(targetUuid);
+                    break;
+
+                case 11: // Set MODERATOR
+                    team.getRoles().put(targetUuid.toString(), "MODERATOR");
                     plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&c&l[Kick] &e" + targetName + " &fhas been kicked from the team!"));
-                    Player tgt = org.bukkit.Bukkit.getPlayer(targetUuid);
-                    if (tgt != null) tgt.sendMessage(plugin.colorize("&c&l[OurTeam] &fYou have been kicked from the team!"));
+                    player.sendMessage(plugin.colorize("&a[Roster] &e" + targetName + " &fhas been set to &e&lMODERATOR&f!"));
+                    Player tgtMod = org.bukkit.Bukkit.getPlayer(targetUuid);
+                    if (tgtMod != null) {
+                        tgtMod.sendMessage(plugin.colorize("&a[OurTeam] &fYou have been set to &e&lMODERATOR &fof your team!"));
+                    }
+                    plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
+                    break;
+
+                case 15: // Set MEMBER
+                    team.getRoles().remove(targetUuid.toString());
+                    plugin.getTeamManager().saveTeam(team);
+                    player.sendMessage(plugin.colorize("&a[Roster] &e" + targetName + " &fhas been set to &7&lMEMBER&f!"));
+                    Player tgtMem = org.bukkit.Bukkit.getPlayer(targetUuid);
+                    if (tgtMem != null) {
+                        tgtMem.sendMessage(plugin.colorize("&a[OurTeam] &fYours role has been changed to &7&lMEMBER&f of your team."));
+                    }
+                    plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
+                    break;
+
+                case 16: // Kick member
+                    team.removeMember(targetUuid);
+                    team.getRoles().remove(targetUuid.toString());
+                    plugin.getTeamManager().saveTeam(team);
+                    player.sendMessage(plugin.colorize("&c[Kick] &e" + targetName + " &fhas been kicked from the team!"));
+                    Player tgtKick = org.bukkit.Bukkit.getPlayer(targetUuid);
+                    if (tgtKick != null) {
+                        tgtKick.sendMessage(plugin.colorize("&c[OurTeam] &fYou have been kicked from your team."));
+                    }
                     plugin.getGuiManager().openMembersMenu(player, team);
-                }
+                    break;
             }
         }
 
         else if ("leaderboard".equalsIgnoreCase(menu)) {
-            if (slot == 22) {
+            if (slot == 49) {
                 plugin.getGuiManager().openMainMenu(player, team);
+            }
+        }
+
+        else if ("alliances".equalsIgnoreCase(menu)) {
+            if (slot == 49) {
+                plugin.getGuiManager().openMainMenu(player, team);
+                return;
+            }
+
+            if (slot >= 9 && slot <= 44) {
+                java.util.List<Team> otherTeams = new java.util.ArrayList<>();
+                for (Team t : plugin.getTeamManager().getAllTeams()) {
+                    if (!t.getName().equalsIgnoreCase(team.getName())) {
+                        otherTeams.add(t);
+                    }
+                }
+                int idx = slot - 9;
+                if (idx >= 0 && idx < otherTeams.size()) {
+                    Team targetTeam = otherTeams.get(idx);
+                    player.closeInventory();
+                    player.sendMessage(plugin.colorize("&b&l[Diplomacy] &fYour alliance proposal sent to: &d" + targetTeam.getName()));
+                }
             }
         }
 
