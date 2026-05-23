@@ -13,13 +13,15 @@ public class Team {
     private String name;
     private UUID owner;
     private final Set<UUID> members;
-    private final transient Set<UUID> invites; // transient so it does not persist to JSON
-    private final transient Set<UUID> requests; // transient so it does not persist to JSON
+    private Set<UUID> invites; // non-final so we can re-initialize on GSON Load
+    private Set<UUID> requests; // non-final so we can re-initialize on GSON Load
+    private java.util.Map<String, Double> memberDeposits; // persistent map for member contributions (donations)
     private boolean friendlyFire;
     private String description;
     private boolean disbanded;
     private java.util.Map<String, String> roles;
     private java.util.Map<String, TeamHome> multiHomes;
+    private java.util.Map<String, TeamHome> multiWarps;
     private double homeX;
     private double homeY;
     private double homeZ;
@@ -39,6 +41,11 @@ public class Team {
     private String pvpForceOverride; // "NONE", "ON", "OFF"
     private long lastActiveTime;
     private boolean echestLocked;
+    private boolean payToggle;
+    private boolean openJoin;
+    private boolean teamChatDisabled;
+    private boolean memberInviteDisabled;
+    private boolean loginAlertsDisabled;
 
     public Team(String name, UUID owner) {
         this.id = UUID.randomUUID();
@@ -48,6 +55,7 @@ public class Team {
         this.members.add(owner);
         this.invites = new HashSet<>();
         this.requests = new HashSet<>();
+        this.memberDeposits = new java.util.HashMap<>();
         this.friendlyFire = false;
         this.description = "A strong team in the making!";
         this.hasHome = false;
@@ -60,12 +68,18 @@ public class Team {
         this.roles = new java.util.HashMap<>();
         this.roles.put(owner.toString(), "OWNER");
         this.multiHomes = new java.util.HashMap<>();
+        this.multiWarps = new java.util.HashMap<>();
         this.bankBalance = 0.0;
         this.systemLocked = false;
         this.lockReason = "";
         this.pvpForceOverride = "NONE";
         this.lastActiveTime = System.currentTimeMillis();
         this.echestLocked = false;
+        this.payToggle = true;
+        this.openJoin = false;
+        this.teamChatDisabled = false;
+        this.memberInviteDisabled = false;
+        this.loginAlertsDisabled = false;
     }
 
     public boolean isSystemLocked() {
@@ -173,24 +187,27 @@ public class Team {
     }
 
     public Set<UUID> getInvites() {
+        if (invites == null) {
+            invites = new HashSet<>();
+        }
         return invites;
     }
 
     public void invitePlayer(UUID uuid) {
-        invites.add(uuid);
+        getInvites().add(uuid);
     }
 
     public boolean hasInvite(UUID uuid) {
-        return invites.contains(uuid);
+        return getInvites().contains(uuid);
     }
 
     public void removeInvite(UUID uuid) {
-        invites.remove(uuid);
+        getInvites().remove(uuid);
     }
 
     public Set<UUID> getRequests() {
         if (requests == null) {
-            return new java.util.HashSet<>();
+            requests = new java.util.HashSet<>();
         }
         return requests;
     }
@@ -205,6 +222,20 @@ public class Team {
 
     public void removeRequest(UUID uuid) {
         getRequests().remove(uuid);
+    }
+
+    public double getMemberDeposits(UUID uuid) {
+        if (memberDeposits == null) {
+            memberDeposits = new java.util.HashMap<>();
+        }
+        return memberDeposits.getOrDefault(uuid.toString(), 0.0);
+    }
+
+    public void addMemberDeposit(UUID uuid, double amount) {
+        if (memberDeposits == null) {
+            memberDeposits = new java.util.HashMap<>();
+        }
+        memberDeposits.put(uuid.toString(), getMemberDeposits(uuid) + amount);
     }
 
     public boolean isFriendlyFireEnabled() {
@@ -306,6 +337,29 @@ public class Team {
             return true;
         }
         return false;
+    }
+
+    public java.util.Map<String, TeamHome> getMultiWarps() {
+        if (multiWarps == null) {
+            multiWarps = new java.util.HashMap<>();
+        }
+        return multiWarps;
+    }
+
+    public boolean hasWarp(String warpName) {
+        return getMultiWarps().containsKey(warpName.toLowerCase());
+    }
+
+    public void setWarp(String warpName, String world, double x, double y, double z, float yaw, float pitch) {
+        getMultiWarps().put(warpName.toLowerCase(), new TeamHome(world, x, y, z, yaw, pitch));
+    }
+
+    public TeamHome getWarp(String warpName) {
+        return getMultiWarps().get(warpName.toLowerCase());
+    }
+
+    public boolean deleteWarp(String warpName) {
+        return getMultiWarps().remove(warpName.toLowerCase()) != null;
     }
 
     public double getHomeX() { return homeX; }
@@ -451,5 +505,59 @@ public class Team {
             return true;
         }
         return false;
+    }
+
+    public boolean isPayToggle() {
+        return payToggle;
+    }
+
+    public void setPayToggle(boolean payToggle) {
+        this.payToggle = payToggle;
+    }
+
+    public boolean isOpenJoin() {
+        return openJoin;
+    }
+
+    public void setOpenJoin(boolean openJoin) {
+        this.openJoin = openJoin;
+    }
+
+    public boolean isTeamChatEnabled() {
+        return !teamChatDisabled;
+    }
+
+    public void setTeamChatEnabled(boolean enabled) {
+        this.teamChatDisabled = !enabled;
+    }
+
+    public boolean isMemberInviteEnabled() {
+        return !memberInviteDisabled;
+    }
+
+    public void setMemberInviteEnabled(boolean enabled) {
+        this.memberInviteDisabled = !enabled;
+    }
+
+    public boolean isLoginAlertsEnabled() {
+        return !loginAlertsDisabled;
+    }
+
+    public void setLoginAlertsEnabled(boolean enabled) {
+        this.loginAlertsDisabled = !enabled;
+    }
+
+    public int getRankPosition(OurTeam plugin) {
+        java.util.List<Team> sorted = new java.util.ArrayList<>(plugin.getTeamManager().getAllTeams());
+        for (Team t : sorted) {
+            t.recalculateScore(plugin);
+        }
+        sorted.sort((t1, t2) -> Integer.compare(t2.getCachedScore(), t1.getCachedScore()));
+        for (int i = 0; i < sorted.size(); i++) {
+            if (sorted.get(i).getId().equals(this.id)) {
+                return i + 1;
+            }
+        }
+        return 1;
     }
 }
