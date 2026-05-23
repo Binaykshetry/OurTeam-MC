@@ -12,6 +12,7 @@ import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Generates custom Minecraft Chest GUIs (Team menus) filled with interactive options.
@@ -770,9 +771,8 @@ public class TeamGUIManager {
         ));
 
         // Let's populate the active teams in the grid slots (9 to 44)
-        java.util.List<Team> teams = plugin.getTeamManager().getAllTeams();
         int slotIdx = 9;
-        for (Team team : teams) {
+        for (Team team : plugin.getTeamManager().getAllTeams()) {
             if (slotIdx > 44) break; // limit to 36 teams per page to stay in grid
 
             org.bukkit.OfflinePlayer owner = Bukkit.getOfflinePlayer(team.getOwner());
