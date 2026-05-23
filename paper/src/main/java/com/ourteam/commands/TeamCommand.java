@@ -1,830 +1,1280 @@
-package com.ourteam.gui;
+package com.ourteam.commands;
 
 import com.ourteam.OurTeam;
 import com.ourteam.model.Team;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 
-import java.util.ArrayList;
+import java.util.UUID;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 /**
- * Generates custom Minecraft Chest GUIs (Team menus) filled with interactive options.
+ * Executes player-facing team commands.
  */
-public class TeamGUIManager {
+public class TeamCommand implements CommandExecutor, TabCompleter {
 
     private final OurTeam plugin;
 
-    public TeamGUIManager(OurTeam plugin) {
+    public TeamCommand(OurTeam plugin) {
         this.plugin = plugin;
     }
 
-    /**
-     * Creates and opens the Main Team Dashboard (Menu: main)
-     */
-    public void openMainMenu(Player player, Team team) {
-        String title = plugin.colorize("&#33CCFF&lTeam Dashboard &7» &f" + team.getName());
-        TeamGUIHolder holder = new TeamGUIHolder("main", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(plugin.getMsg("only-players"));
+            return true;
         }
 
-        // Slot 10: Team Bank
-        inv.setItem(10, createGuiItem(Material.GOLD_INGOT, 
-            "&#FFCC00&lTeam Bank Balance", 
-            "&7Status: Economy Management",
-            "",
-            "&fBalance: &a$" + String.format("%,.2f", team.getBankBalance()),
-            "",
-            "&a▶ Click to open Bank Menu"
-        ));
+        Player player = (Player) sender;
 
-        // Slot 11: Team Members
-        inv.setItem(11, createMemberSkullItem(player, 
-            "&#CC66FF&lTeam Members &7(" + team.getMembers().size() + ")", 
-            "&7Status: Roster Management",
-            "",
-            "&fTotal Members: &e" + team.getMembers().size() + "/8",
-            "",
-            "&a▶ Click to view team members roster"
-        ));
-
-        // Slot 12: Join Requests
-        int requestCount = team.getRequests().size();
-        inv.setItem(12, createGuiItem(Material.SHIELD, 
-            "&#33CCFF&lJoin Requests &7(" + requestCount + ")", 
-            "&7Status: Pending Applications Hub",
-            "",
-            "&fPending Requests: &e" + requestCount,
-            "",
-            "&a▶ Click to manage Join Requests"
-        ));
-
-        // Slot 13: Team Homes & Warps. Dynamically shown ONLY if at least 1 home or 1 warp is set!
-        if (!team.getMultiHomes().isEmpty() || !team.getMultiWarps().isEmpty()) {
-            inv.setItem(13, createGuiItem(Material.COMPASS, 
-                "&#FF3366&lHOMES & &#FF9933&lWARPS", 
-                "&7Status: Navigation Hub",
-                "",
-                "&fTotal Homes Set: &e" + team.getMultiHomes().size(),
-                "&fTotal Warps Set: &b" + team.getMultiWarps().size(),
-                "",
-                "&a▶ Click to open Homes & Warps Menu"
-            ));
-        } else {
-            inv.setItem(13, marker);
+        if (!player.hasPermission("ourteam.use")) {
+            player.sendMessage(plugin.getMsg("no-permission"));
+            return true;
         }
 
-        // Slot 14: Team Enderchest
-        inv.setItem(14, createGuiItem(Material.ENDER_CHEST, 
-            "&#CC99FF&lTeam Shared Enderchest", 
-            "&7Status: Public vault of valuables",
-            "",
-            "&fSlots: &727 Slots",
-            "",
-            "&a▶ Click to access virtual chest storage"
-        ));
-
-        // Slot 15: Team Statistics & Leaderboards
-        double kdr = team.getDeaths() > 0 ? (double) team.getKills() / team.getDeaths() : team.getKills();
-        inv.setItem(15, createGuiItem(Material.DIAMOND_SWORD, 
-            "&#FF3333&lTeam Statistics & Leaderboards", 
-            "&7Status: Core Competitive Metrics",
-            "",
-            "&fKills: &a" + team.getKills() + " &7| &fDeaths: &c" + team.getDeaths(),
-            "&fKDR: &e" + String.format("%.2f", kdr) + " Ratio",
-            "&fPoints: &6" + team.getGrindingPoints() + " pts",
-            "",
-            "&e▶ Click to view Leaderboards"
-        ));
-
-        // Slot 16: Settings Menu Toggle
-        inv.setItem(16, createGuiItem(Material.COMPARATOR, 
-            "&#FF6600&lTeam Settings Panel", 
-            "&7Status: Configurations",
-            "",
-            "&fFriendly Fire: " + (team.isFriendlyFireEnabled() ? "&aON" : "&cOFF"),
-            "",
-            "&a▶ Click to manage rules and toggles"
-        ));
-
-        // Slot 18: Leave Team Button (Accessible to all members)
-        inv.setItem(18, createGuiItem(Material.RED_TULIP, 
-            "&#FF3333&lLeave Team Option", 
-            "&7Abandon or quit this team.",
-            "",
-            "&7Warning: If you are the owner, leaving",
-            "&7will automatically disband the team!",
-            "",
-            "&c▶ Click to LEAVE the team safely"
-        ));
-
-        player.openInventory(inv);
-    }
-
-    /**
-     * Creates and opens the Team Settings sub-menu (Menu: settings)
-     */
-    public void openSettingsMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FF6600&lTeam Settings Panel");
-        TeamGUIHolder holder = new TeamGUIHolder("settings", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
+        if (args.length == 0) {
+            Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+            if (team == null) {
+                player.sendMessage(plugin.colorize("&cYou must be in a team to open the menu. Type &e/team create <name> &cto form one first!"));
+            } else {
+                plugin.getGuiManager().openMainMenu(player, team);
+                player.sendMessage(plugin.colorize("&a[OurTeam] Opening Team GUI menu..."));
+            }
+            return true;
         }
 
-        // Slot 10: Toggle PvP friendly fire
-        String pvpStatus = team.isFriendlyFireEnabled() ? "&a&lENABLED &7(Damage ON)" : "&c&lDISABLED &7(Damage OFF)";
-        inv.setItem(10, createGuiItem(Material.IRON_SWORD, 
-            "&#FF3333&lFriendly Fire Toggle", 
-            "&7Enables or disables PvP among team-members",
-            "",
-            "&fPvP Status: " + pvpStatus,
-            "",
-            "&e▶ Click to TOGGLE friendly fire pvp!"
-        ));
-
-        // Slot 11: Toggle TeamPay (Payment Sharing settings)
-        String payStatus = team.isPayToggle() ? "&a&lENABLED &7(Deposits allowed)" : "&c&lDISABLED &7(Deposits blocked)";
-        inv.setItem(11, createGuiItem(Material.SUNFLOWER, 
-            "&#FFCC00&lTeamPay Toggle", 
-            "&7Toggles whether team members can deposit into bank",
-            "",
-            "&fTeamPay Status: " + payStatus,
-            "",
-            "&e▶ Click to TOGGLE TeamPay deposits!"
-        ));
-
-        // Slot 12: Enderchest Access Lock
-        String echestStatus = team.isEchestLocked() ? "&c&lLOCKED &7(Admin/Owner Only)" : "&a&lUNLOCKED &7(All Members)";
-        inv.setItem(12, createGuiItem(Material.CHEST, 
-            "&#CC99FF&lEnderchest Access Lock", 
-            "&7Controls teammate access to shared enderchest",
-            "",
-            "&fAccess Lock Status: " + echestStatus,
-            "",
-            "&e▶ Click to TOGGLE Enderchest access lock"
-        ));
-
-        // Slot 13: Team Standing & Score Metrics (including "What does it mean" explanation to avoid GUI text overflow)
-        team.recalculateScore(plugin);
-        int score = team.getCachedScore();
-        int rank = team.getRankPosition(plugin);
-        int totalTeams = plugin.getTeamManager().getAllTeams().size();
-
-        inv.setItem(13, createGuiItem(Material.NETHER_STAR, 
-            "&#00FFCC&lTeam Standing & Score Metrics", 
-            "&7Active Leaderboard Standing",
-            "",
-            "&fTeam Rank Position: &b&l#" + rank + " &7of &f" + totalTeams + " Teams",
-            "&fTotal Team Score: &a&l" + score + " Points",
-            "",
-            "&e▶ What does this mean? (Hover details)",
-            "&7Your TeamScore measures competitive grinding:",
-            "&f- Active Members: &7+50 pts each",
-            "&f- Team Bank Vault: &7+1 pt per $10k",
-            "&f- Combat Grinding: &7Pts from PvP kills",
-            "&f  &7- Earn &e+5 pts &7per Kill",
-            "&f  &7- Lose &c-2 pts &7per Death"
-        ));
-
-        // Slot 14: Open Join policy (registration tag)
-        String joinPolicyStatus = team.isOpenJoin() ? "&a&lOPEN JOIN &7(No invite needed)" : "&c&lINVITE/REQUESTS &7(Invite/Apply required)";
-        inv.setItem(14, createGuiItem(Material.OAK_DOOR, 
-            "&#33CCFF&lOpen Join Policy", 
-            "&7Toggle if outsiders can join without invites",
-            "",
-            "&fJoin Policy: " + joinPolicyStatus,
-            "",
-            "&e▶ Click to TOGGLE open join registration"
-        ));
-
-        // Slot 15: Team Chat Toggle
-        String chatPolicyStatus = team.isTeamChatEnabled() ? "&a&lENABLED &7(Teammates can chat)" : "&c&lDISABLED &7(Team chat locked)";
-        inv.setItem(15, createGuiItem(Material.PAPER, 
-            "&#33CC99&lTeam Chat Toggle", 
-            "&7Toggles whether the team chat channel is active",
-            "",
-            "&fTeam Chat: " + chatPolicyStatus,
-            "",
-            "&e▶ Click to TOGGLE team-wide chat"
-        ));
-
-        // Slot 16: Member Invite Toggle
-        String invitePolicyStatus = team.isMemberInviteEnabled() ? "&a&lENABLED &7(Members can invite)" : "&c&lDISABLED &7(Admins/Owner only)";
-        inv.setItem(16, createGuiItem(Material.WRITABLE_BOOK, 
-            "&#FF66CC&lMember Invite Toggle", 
-            "&7Toggles if ordinary members can invite others",
-            "",
-            "&fMember Inviting: " + invitePolicyStatus,
-            "",
-            "&e▶ Click to TOGGLE invite permissions"
-        ));
-
-        // Slot 17: Teammate Login Alert Toggle
-        String alertPolicyStatus = team.isLoginAlertsEnabled() ? "&a&lENABLED &7(Login broadcasts ON)" : "&c&lDISABLED &7(Broadcasts OFF)";
-        inv.setItem(17, createGuiItem(Material.REDSTONE_LAMP, 
-            "&#E0C068&lTeammate Login Alerts", 
-            "&7Toggles notifications when teammates join/quit",
-            "",
-            "&fTeammate Logs: " + alertPolicyStatus,
-            "",
-            "&e▶ Click to TOGGLE login system alerts"
-        ));
-
-        // Slot 22: Go back
-        inv.setItem(22, createGuiItem(Material.ARROW, 
-            "&e&l◀ Return to Dashboard", 
-            "&7Go back to main team GUI panel"
-        ));
-
-        player.openInventory(inv);
-    }
-
-    /**
-     * Creates and opens the Team Members sub-menu (Menu: members)
-     */
-    public void openMembersMenu(Player player, Team team) {
-        String title = plugin.colorize("&#CC66FF&lMembers &7» &f" + team.getName());
-        TeamGUIHolder holder = new TeamGUIHolder("members", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
+        // Intercept allthecommandseen and shift arguments for execution
+        if (args[0].equalsIgnoreCase("allthecommandseen")) {
+            if (args.length == 1) {
+                sendHelp(player);
+                return true;
+            } else {
+                String[] shiftedArgs = new String[args.length - 1];
+                System.arraycopy(args, 1, shiftedArgs, 0, shiftedArgs.length);
+                args = shiftedArgs;
+            }
         }
 
-        // Layout members skulls
-        int index = 0;
-        int[] memberSlots = { 10, 11, 12, 13, 14, 15, 16 };
+        String subCommand = args[0].toLowerCase();
+        String canonical = getCanonicalSubCommand(subCommand);
+        if (!isCommandEnabled(canonical)) {
+            player.sendMessage(plugin.colorize("&c[OurTeam] The '/team " + canonical + "' command feature is currently disabled."));
+            return true;
+        }
 
-        for (UUID memberId : team.getMembers()) {
-            if (index >= memberSlots.length) {
+        Team commandTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (commandTeam != null) {
+            commandTeam.updateActiveTime();
+        }
+
+        // Target team lock check on joining / requesting
+        if (canonical.equals("join") || canonical.equals("request")) {
+            if (args.length >= 2) {
+                Team targetTeam = plugin.getTeamManager().getTeamByName(args[1]);
+                if (targetTeam != null && targetTeam.isSystemLocked() && !player.hasPermission("ourteam.admin") && !player.isOp()) {
+                    player.sendMessage(plugin.colorize("&c[OurTeam] That team is currently LOCKED by an administrator and cannot be joined."));
+                    return true;
+                }
+            }
+        }
+
+        if (commandTeam != null && commandTeam.isSystemLocked() && !player.hasPermission("ourteam.admin") && !player.isOp()) {
+            if (isMutatingCommand(canonical)) {
+                player.sendMessage(plugin.colorize("&c[OurTeam] Your team is currently LOCKED by a server administrator!"));
+                player.sendMessage(plugin.colorize("&cReason: &7" + commandTeam.getLockReason()));
+                return true;
+            }
+        }
+
+        switch (subCommand) {
+            case "menu":
+            case "gui": {
+                Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+                if (team == null) {
+                    player.sendMessage(plugin.colorize("&cYou must be in a team to open the menu."));
+                } else {
+                    plugin.getGuiManager().openMainMenu(player, team);
+                }
                 break;
             }
-            org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(memberId);
-            String name = offlinePlayer.getName() != null ? offlinePlayer.getName() : "Unknown Player";
-            String role = team.getRole(memberId);
-
-            // Query details for lore
-            String status = offlinePlayer.isOnline() ? "&a● Online" : "&7○ Offline";
-
-            ItemStack skull = createMemberSkullItem(offlinePlayer, "&#CC66FF&l" + name,
-                "&7Status: " + status,
-                "&fRole: &b&l" + role,
-                "",
-                "&f- UUID: &7" + memberId.toString().substring(0, 8),
-                "",
-                "&e▶ Click to view detailed profile & actions"
-            );
-
-            inv.setItem(memberSlots[index], skull);
-            index++;
+            case "settings": {
+                Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+                if (team == null) {
+                    player.sendMessage(plugin.colorize("&cYou must belong to a team first!"));
+                } else {
+                    plugin.getGuiManager().openSettingsMenu(player, team);
+                }
+                break;
+            }
+            case "create":
+                handleCreate(player, args);
+                break;
+            case "invite":
+            case "invited":
+                handleInvite(player, args);
+                break;
+            case "join":
+            case "accept":
+                handleAccept(player, args);
+                break;
+            case "request":
+                handleRequest(player, args);
+                break;
+            case "acceptrequest":
+                handleAcceptRequest(player, args);
+                break;
+            case "leave":
+                handleLeave(player);
+                break;
+            case "echest":
+            case "chest":
+                handleEchest(player);
+                break;
+            case "kick":
+                handleKick(player, args);
+                break;
+            case "disband":
+                handleDisband(player);
+                break;
+            case "friendlyfire":
+            case "ff":
+            case "pvp":
+                handleFriendlyFire(player);
+                break;
+            case "admin":
+            case "promote":
+                handlePromote(player, args);
+                break;
+            case "demote":
+                handleDemote(player, args);
+                break;
+            case "msg":
+                handleMsg(player, args);
+                break;
+            case "warp":
+            case "home":
+                handleHome(player, args);
+                break;
+            case "setwarp":
+            case "sethome":
+                handleSetHome(player, args);
+                break;
+            case "delwarp":
+            case "delhome":
+                handleDelHome(player, args);
+                break;
+            case "chat":
+            case "c":
+                handleChatToggle(player);
+                break;
+            case "info":
+                handleInfo(player, args);
+                break;
+            case "bank":
+                handleBank(player);
+                break;
+            case "list":
+                handleList(player);
+                break;
+            case "top":
+                handleTop(player);
+                break;
+            case "paytoggle":
+            case "pay":
+                handlePayToggle(player);
+                break;
+            default:
+                player.sendMessage(plugin.colorize("&c[OurTeam] Unknown command. Type &e/team allthecommandseen &cto see all subcommands."));
+                break;
         }
 
-        // Slot 22: Return to Dashboard
-        inv.setItem(22, createGuiItem(Material.ARROW, 
-            "&e&l◀ Return to Dashboard", 
-            "&7Go back to main team GUI panel"
-        ));
-
-        player.openInventory(inv);
+        return true;
     }
 
-    /**
-     * Creates and opens the Team Bank sub-menu (Menu: bank)
-     */
-    public void openBankMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FFCC00&lTeam Bank &7» &fDeposit/Withdraw");
-        TeamGUIHolder holder = new TeamGUIHolder("bank", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
+    private void handleCreate(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team create <name>"));
+            return;
         }
 
-        // Slot 10: Deposit $100
-        inv.setItem(10, createGuiItem(Material.EMERALD, 
-            "&#00FF99&lDeposit $100.00", 
-            "&7Directly deposit $100.00 from your hand.",
-            "",
-            "&e▶ Click to deposit $100"
-        ));
+        if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) != null) {
+            player.sendMessage(plugin.getMsg("already-in-team"));
+            return;
+        }
 
-        // Slot 11: Custom Donation / Deposit (Writable Book)
-        inv.setItem(11, createGuiItem(Material.WRITABLE_BOOK, 
-            "&#00FFBC&lCustom Deposit / Donate", 
-            "&7Deposit or donate any custom amount.",
-            "&7Click here, then type the amount in chat.",
-            "",
-            "&e▶ Click to enter custom amount in chat"
-        ));
+        String teamName = args[1];
+        int minLen = plugin.getConfig().getInt("team-settings.min-name-length", 3);
+        int maxLen = plugin.getConfig().getInt("team-settings.max-name-length", 12);
 
-        // Slot 13: Gold Block of current ledger info
-        inv.setItem(13, createGuiItem(Material.GOLD_BLOCK, 
-            "&#FFCC00&lAccount Balance Info", 
-            "&7Bank details & interest stats",
-            "",
-            "&fLEDGER: &e$" + String.format("%,.2f", team.getBankBalance()),
-            "&fInterest Rate: &b" + plugin.getConfig().getDouble("team-bank.interest-rate", 5.0) + "% accrual",
-            "&fMax Accrual Cap: &b$" + plugin.getConfig().getDouble("team-bank.max-accrual", 15.0),
-            ""
-        ));
+        if (teamName.length() < minLen || teamName.length() > maxLen) {
+            player.sendMessage(plugin.colorize("&cTeam names must be between " + minLen + " and " + maxLen + " characters long."));
+            return;
+        }
 
-        // Slot 15: Custom Withdraw (Redstone)
-        inv.setItem(15, createGuiItem(Material.REDSTONE, 
-            "&#FF3366&lCustom Withdraw", 
-            "&7Withdraw any custom amount of money.",
-            "&7Click here, then type the amount in chat.",
-            "&7&o(Admins/Owner Only)",
-            "",
-            "&c▶ Click to enter withdrawal amount in chat"
-        ));
+        for (String blocked : plugin.getConfig().getStringList("team-settings.blocked-names")) {
+            if (teamName.toLowerCase().contains(blocked.toLowerCase())) {
+                player.sendMessage(plugin.colorize("&cThis team name is blocked or contains inappropriate words."));
+                return;
+            }
+        }
 
-        // Slot 16: Withdraw $100
-        inv.setItem(16, createGuiItem(Material.ANVIL, 
-            "&#FF3333&lWithdraw $100.00", 
-            "&7Directly withdraw $100.00 from the vault.",
-            "&7&o(Admins/Owner Only)",
-            "",
-            "&c▶ Click to withdraw $100"
-        ));
+        if (plugin.getTeamManager().getTeamByName(teamName) != null) {
+            player.sendMessage(plugin.getMsg("team-already-exists"));
+            return;
+        }
 
-        // Slot 22: Go back Arrow
-        inv.setItem(22, createGuiItem(Material.ARROW, 
-            "&e&l◀ Return to Dashboard", 
-            "&7Go back to main team GUI panel"
-        ));
-
-        player.openInventory(inv);
+        Team team = plugin.getTeamManager().createTeam(teamName, player);
+        player.sendMessage(plugin.getMsg("team-created").replace("{team}", team.getName()));
+        plugin.updateTabFormatting(player);
     }
 
-    /**
-     * Creates and opens the Homes & Warps sub-menu (Menu: homes_warps)
-     */
-    public void openHomesWarpsMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FF3366&lHomes & &#FF9933&lWarps");
-        TeamGUIHolder holder = new TeamGUIHolder("homes_warps", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
+    private void handleInvite(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team invite <player>"));
+            return;
         }
 
-        // Homes Button (Slot 11) - Only shown if at least one home exists
-        if (!team.getMultiHomes().isEmpty()) {
-            int maxHomes = plugin.getConfig().getInt("cooldowns-and-teleportation.max-homes-per-team", 3);
-            inv.setItem(11, createGuiItem(Material.RED_BED,
-                "&#FF3366&lTeam Homes list",
-                "&7Status: Active Registered Homes",
-                "",
-                "&fTotal Set: &e" + team.getMultiHomes().size() + " &7/ &e" + maxHomes,
-                "",
-                "&a▶ Click to open Homes list"
-            ));
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
         }
 
-        // Warps Button (Slot 15) - Only shown if at least one warp exists
-        if (!team.getMultiWarps().isEmpty()) {
-            int maxWarps = plugin.getConfig().getInt("cooldowns-and-teleportation.max-warps-per-team", 5);
-            inv.setItem(15, createGuiItem(Material.ENDER_PEARL,
-                "&#FF9933&lTeam Warps list",
-                "&7Status: Active Registered Warps",
-                "",
-                "&fTotal Set: &b" + team.getMultiWarps().size() + " &7/ &b" + maxWarps,
-                "",
-                "&a▶ Click to open Warps list"
-            ));
+        if (!plugin.hasTeamPermission(team, player.getUniqueId(), "invite")) {
+            player.sendMessage(plugin.colorize("&cOnly authorized team ranks can send invites."));
+            return;
         }
 
-        // Slot 22: Return to Dashboard
-        inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Dashboard",
-            "&7Go back to main team GUI panel"
-        ));
+        if (!team.isMemberInviteEnabled() && !team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+            player.sendMessage(plugin.colorize("&cError: Member inviting is currently disabled by team settings (admins/owner only)."));
+            return;
+        }
 
-        player.openInventory(inv);
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) {
+            player.sendMessage(plugin.getMsg("player-not-found"));
+            return;
+        }
+
+        int maxPlayers = plugin.getConfig().getInt("team-settings.max-players-per-team", 8);
+        if (maxPlayers != -1 && team.getMembers().size() >= maxPlayers) {
+            player.sendMessage(plugin.colorize("&cYour team is already full (max " + maxPlayers + " players)."));
+            return;
+        }
+
+        team.invitePlayer(target.getUniqueId());
+        player.sendMessage(plugin.getMsg("player-invited").replace("{player}", target.getName()));
+        target.sendMessage(plugin.getMsg("invited-by").replace("{team}", team.getName()));
     }
 
-    /**
-     * Creates and opens the Team Homes listing menu (Menu: homes_list)
-     */
-    public void openHomesListMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FF3366&lTeam Homes");
-        TeamGUIHolder holder = new TeamGUIHolder("homes_list", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
+    private void handleAccept(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team accept <teamName|playerName>"));
+            return;
         }
 
-        int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-        int idx = 0;
-        for (java.util.Map.Entry<String, Team.TeamHome> entry : team.getMultiHomes().entrySet()) {
-            if (idx >= slots.length) break;
-            Team.TeamHome home = entry.getValue();
-            String name = entry.getKey();
+        Team cmdPlayerTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        String argument = args[1];
 
-            inv.setItem(slots[idx], createGuiItem(Material.RED_BED,
-                "&#FF3366&lHome: " + name,
-                "&7World: &e" + home.getWorld(),
-                "&7Coords: &fX: " + (int)home.getX() + " Y: " + (int)home.getY() + " Z: " + (int)home.getZ(),
-                "",
-                "&a▶ Left-Click &f(TELEPORT)",
-                "&c◀ Right-Click &f(DELETE - Admin+)"
-            ));
-            idx++;
+        // If the sender is already in a team and is authorized, check if they are accepting a player's request
+        if (cmdPlayerTeam != null && plugin.hasTeamPermission(cmdPlayerTeam, player.getUniqueId(), "acceptrequest")) {
+            Player target = Bukkit.getPlayer(argument);
+            UUID targetUuid = target != null ? target.getUniqueId() : Bukkit.getOfflinePlayer(argument).getUniqueId();
+            if (cmdPlayerTeam.hasRequest(targetUuid)) {
+                handleAcceptRequest(player, args);
+                return;
+            }
         }
 
-        // Slot 22: Return to selector
-        inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Homes & Warps Menu",
-            "&7Go back to navigation options"
-        ));
+        // Otherwise, standard behavior: accept a team invitation
+        if (cmdPlayerTeam != null) {
+            player.sendMessage(plugin.getMsg("already-in-team"));
+            return;
+        }
 
-        player.openInventory(inv);
+        Team team = plugin.getTeamManager().getTeamByName(argument);
+
+        if (team == null) {
+            player.sendMessage(plugin.colorize("&cError: Specified team '" + argument + "' not found."));
+            return;
+        }
+
+        boolean directJoin = team.isOpenJoin();
+        if (!team.hasInvite(player.getUniqueId()) && !directJoin) {
+            player.sendMessage(plugin.colorize("&cError: You do not have an active invitation to join &b" + team.getName() + "&c. Use &e/team request " + team.getName() + " &cto apply to join!"));
+            return;
+        }
+
+        plugin.getTeamManager().addPlayerToTeam(player, team);
+        player.sendMessage(plugin.colorize("&aYou successfully joined team &b" + team.getName() + "&a!" + (directJoin && !team.hasInvite(player.getUniqueId()) ? " &7(Direct Join)" : "")));
+        
+        // Broadcast to team
+        for (UUID memberId : team.getMembers()) {
+            Player p = Bukkit.getPlayer(memberId);
+            if (p != null) {
+                p.sendMessage(plugin.getMsg("player-joined").replace("{player}", player.getName()));
+                plugin.updateTabFormatting(p);
+            }
+        }
     }
 
-    /**
-     * Creates and opens the Team Warps listing menu (Menu: warps_list)
-     */
-    public void openWarpsListMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FF9933&lTeam Warps");
-        TeamGUIHolder holder = new TeamGUIHolder("warps_list", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
+    private void handleLeave(Player player) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
         }
 
-        int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-        int idx = 0;
-        for (java.util.Map.Entry<String, Team.TeamHome> entry : team.getMultiWarps().entrySet()) {
-            if (idx >= slots.length) break;
-            Team.TeamHome warp = entry.getValue();
-            String name = entry.getKey();
-
-            inv.setItem(slots[idx], createGuiItem(Material.ENDER_PEARL,
-                "&#FF9933&lWarp: " + name,
-                "&7World: &e" + warp.getWorld(),
-                "&7Coords: &fX: " + (int)warp.getX() + " Y: " + (int)warp.getY() + " Z: " + (int)warp.getZ(),
-                "",
-                "&a▶ Left-Click &f(TELEPORT)",
-                "&c◀ Right-Click &f(DELETE - Admin+)"
-            ));
-            idx++;
+        if (team.getOwner().equals(player.getUniqueId())) {
+            // Notify teammates before disbanding from owner leaving
+            for (UUID memberId : team.getMembers()) {
+                Player p = Bukkit.getPlayer(memberId);
+                if (p != null) {
+                    p.sendMessage(plugin.colorize("&c&l[OurTeam] The team owner &e" + player.getName() + " &chas left the team. The team has been automatically disbanded!"));
+                    plugin.updateTabFormatting(p);
+                }
+            }
+            
+            plugin.getTeamManager().disbandTeam(team);
+            player.sendMessage(plugin.colorize("&eYou left your team &b" + team.getName() + "&e, so the team has been automatically disbanded."));
+            plugin.updateTabFormatting(player);
+            return;
         }
 
-        // Slot 22: Return to selector
-        inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Homes & Warps Menu",
-            "&7Go back to navigation options"
-        ));
+        plugin.getTeamManager().removePlayerFromTeam(player, team);
+        player.sendMessage(plugin.getMsg("left-success"));
+        plugin.updateTabFormatting(player);
 
-        player.openInventory(inv);
+        // Notify teammates
+        for (UUID memberId : team.getMembers()) {
+            Player p = Bukkit.getPlayer(memberId);
+            if (p != null) {
+                p.sendMessage(plugin.getMsg("player-left").replace("{player}", player.getName()));
+            }
+        }
     }
 
-    /**
-     * Opens a sub-menu showing detailed statistics and actions for a specific team member.
-     */
-    public void openMemberDetailMenu(Player viewer, Team team, org.bukkit.OfflinePlayer target) {
-        String title = plugin.colorize("&#CC66FF&lMember Detail &7» &f" + target.getName());
-        TeamGUIHolder holder = new TeamGUIHolder("member_detail:" + target.getUniqueId().toString(), team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Background decoration
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
+    private void handleKick(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team kick <player>"));
+            return;
         }
 
-        // Slot 13: The member head showing all the requested details
-        long firstPlayed = target.getFirstPlayed();
-        String joinDate = firstPlayed > 0 ? new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(firstPlayed)) : "Never";
-        double totalDeposited = team.getMemberDeposits(target.getUniqueId());
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
 
-        inv.setItem(13, createMemberSkullItem(target, "&#CC66FF&l" + target.getName(),
-            "&7Status details for this member",
-            "",
-            "&f⚡ Role: &#33CCFF&l" + team.getRole(target.getUniqueId()),
-            "&f⚡ Server Joined: &e" + joinDate,
-            "&f⚡ Total Donated/Deposited: &a$" + String.format("%,.2f", totalDeposited),
-            "",
-            "&f⚡ UUID: &7" + target.getUniqueId().toString()
-        ));
+        UUID playerUuid = player.getUniqueId();
+        if (!plugin.hasTeamPermission(team, playerUuid, "kick")) {
+            player.sendMessage(plugin.colorize("&cOnly authorized team ranks can kick members."));
+            return;
+        }
 
-        // Rank management permissions check
-        boolean canManage = (team.isAdminOrHigher(viewer.getUniqueId()) || viewer.isOp() || viewer.hasPermission("ourteam.admin"))
-                && !target.getUniqueId().equals(viewer.getUniqueId())
-                && !target.getUniqueId().equals(team.getOwner());
+        Player target = Bukkit.getPlayer(args[1]);
+        UUID targetUuid;
+        String targetName;
 
-        if (canManage) {
-            String role = team.getRole(target.getUniqueId());
-            // Slot 11: Promote button if role is MEMBER
-            if ("MEMBER".equalsIgnoreCase(role)) {
-                inv.setItem(11, createGuiItem(Material.GOLD_INGOT,
-                    "&#00FF99&lPromote to Admin",
-                    "&7Grant this member administrator rights,",
-                    "&7allowing them to manage settings,",
-                    "&7warps/homes and invites.",
-                    "",
-                    "&a▶ Click to PROMOTE to ADMIN"
-                ));
-            } else {
-                inv.setItem(11, createGuiItem(Material.BARRIER,
-                    "&c&lCannot Promote",
-                    "&7This player is already an Admin or Owner!"
-                ));
+        if (target != null) {
+            targetUuid = target.getUniqueId();
+            targetName = target.getName();
+        } else {
+            // Offline player support
+            targetUuid = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+            targetName = args[1];
+        }
+
+        if (targetUuid.equals(player.getUniqueId())) {
+            player.sendMessage(plugin.getMsg("cannot-kick-self"));
+            return;
+        }
+
+        if (!team.isMember(targetUuid)) {
+            player.sendMessage(plugin.colorize("&cThat player is not in your team."));
+            return;
+        }
+
+        if (team.getRole(targetUuid).equalsIgnoreCase("OWNER")) {
+            player.sendMessage(plugin.colorize("&cYou cannot kick the Team Owner!"));
+            return;
+        }
+
+        String kickerRole = team.getRole(playerUuid);
+        String targetRole = team.getRole(targetUuid);
+        if ((kickerRole.equalsIgnoreCase("ADMIN") || kickerRole.equalsIgnoreCase("MODERATOR")) && 
+                (targetRole.equalsIgnoreCase("ADMIN") || targetRole.equalsIgnoreCase("MODERATOR") || targetRole.equalsIgnoreCase("OWNER"))) {
+            player.sendMessage(plugin.colorize("&cAdmins cannot kick other admins or the owner."));
+            return;
+        }
+
+        team.removeMember(targetUuid);
+        plugin.getTeamManager().saveAll();
+
+        player.sendMessage(plugin.getMsg("player-kicked").replace("{player}", targetName));
+
+        if (target != null) {
+            target.sendMessage(plugin.getMsg("kicked-success"));
+            plugin.updateTabFormatting(target);
+        }
+
+        for (UUID memberId : team.getMembers()) {
+            Player p = Bukkit.getPlayer(memberId);
+            if (p != null) {
+                p.sendMessage(plugin.colorize("&e" + targetName + " has been kicked from the team."));
+            }
+        }
+    }
+
+    private void handleFriendlyFire(Player player) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        if (!plugin.hasTeamPermission(team, player.getUniqueId(), "pvp")) {
+            player.sendMessage(plugin.colorize("&cOnly authorized team ranks can toggle friendly fire."));
+            return;
+        }
+
+        boolean newVal = !team.isFriendlyFireEnabled();
+        team.setFriendlyFire(newVal);
+        plugin.getTeamManager().saveAll();
+
+        String stateStr = newVal ? "ENABLED" : "DISABLED";
+        String formattedMsg = plugin.getMsg("friendly-fire-toggle").replace("{state}", stateStr);
+        
+        for (UUID memberId : team.getMembers()) {
+            Player p = Bukkit.getPlayer(memberId);
+            if (p != null) {
+                p.sendMessage(formattedMsg);
+            }
+        }
+    }
+
+    private void handleSetHome(Player player, String[] args) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        boolean isWarp = args[0].equalsIgnoreCase("setwarp");
+
+        // Rank Check
+        if (!plugin.hasTeamPermission(team, player.getUniqueId(), isWarp ? "setwarp" : "sethome")) {
+            player.sendMessage(plugin.colorize("&cHey, your rank does not have permission to set team " + (isWarp ? "warps" : "homes") + "."));
+            return;
+        }
+
+        // Permission check
+        String requiredPerm = isWarp ? "ourteam.setwarp" : "ourteam.sethome";
+        if (!player.hasPermission(requiredPerm)) {
+            player.sendMessage(plugin.colorize("&cYou do not have the '" + requiredPerm + "' permission."));
+            return;
+        }
+
+        String labelName = args.length >= 2 ? args[1].toLowerCase() : (isWarp ? "warp" : "home");
+
+        // Check for sethome.others / setwarp.others
+        if (args.length >= 3) {
+            String othersPerm = isWarp ? "ourteam.setwarp.others" : "ourteam.sethome.others";
+            if (!player.hasPermission(othersPerm)) {
+                player.sendMessage(plugin.colorize("&cYou do not have the '" + othersPerm + "' permission to set " + (isWarp ? "warps" : "homes") + " for others."));
+                return;
+            }
+            Player targetPlayer = Bukkit.getPlayer(args[2]);
+            if (targetPlayer == null) {
+                player.sendMessage(plugin.getMsg("player-not-found"));
+                return;
+            }
+            if (!team.isMember(targetPlayer.getUniqueId())) {
+                player.sendMessage(plugin.colorize("&cThat player is not in your team."));
+                return;
             }
 
-            // Slot 15: Demote/Kick button
-            if ("ADMIN".equalsIgnoreCase(role) || "MODERATOR".equalsIgnoreCase(role)) {
-                inv.setItem(15, createGuiItem(Material.REDSTONE,
-                    "&#FF3366&lDemote to Member",
-                    "&7Strip administrator permissions from",
-                    "&7this user, returning them to Member.",
-                    "",
-                    "&c▶ Click to DEMOTE to MEMBER"
-                ));
+            int maxLimit = isWarp ? getMaxWarps(player) : getMaxHomes(player);
+            int currentCount = isWarp ? team.getMultiWarps().size() : team.getMultiHomes().size();
+            boolean alreadyHas = isWarp ? team.hasWarp(labelName) : team.hasHome(labelName);
+            if (!alreadyHas && currentCount >= maxLimit) {
+                player.sendMessage(plugin.colorize("&cYour team has reached the maximum limit of " + maxLimit + " " + (isWarp ? "warp(s)" : "home(s)") + " for your current rank."));
+                return;
+            }
+
+            Location loc = targetPlayer.getLocation();
+            if (isWarp) {
+                team.setWarp(labelName, loc.getWorld().getName(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
             } else {
-                inv.setItem(15, createGuiItem(Material.LAVA_BUCKET,
-                    "&#FF3333&lKick Member",
-                    "&7Remove this member from the team.",
-                    "&7They will lose access to team resources.",
-                    "",
-                    "&c▶ Click to KICK from Team"
-                ));
+                team.setHome(labelName, loc.getWorld().getName(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
+            }
+            plugin.getTeamManager().saveAll();
+
+            player.sendMessage(plugin.colorize("&aTeam " + (isWarp ? "warp" : "home") + " '&e" + labelName + "&a' set successfully at &e" + targetPlayer.getName() + "&a's location!"));
+            targetPlayer.sendMessage(plugin.colorize("&e" + player.getName() + " &aset your team " + (isWarp ? "warp" : "home") + " '&e" + labelName + "&a' at your location."));
+            return;
+        }
+
+        // Standard sethome / setwarp
+        int maxLimit = isWarp ? getMaxWarps(player) : getMaxHomes(player);
+        int currentCount = isWarp ? team.getMultiWarps().size() : team.getMultiHomes().size();
+        boolean alreadyHas = isWarp ? team.hasWarp(labelName) : team.hasHome(labelName);
+        if (!alreadyHas && currentCount >= maxLimit) {
+            player.sendMessage(plugin.colorize("&cYour team has reached the maximum limit of " + maxLimit + " " + (isWarp ? "warp(s)" : "home(s)") + " for your current rank."));
+            return;
+        }
+
+        Location loc = player.getLocation();
+        if (isWarp) {
+            team.setWarp(labelName, loc.getWorld().getName(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
+        } else {
+            team.setHome(labelName, loc.getWorld().getName(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
+        }
+        plugin.getTeamManager().saveAll();
+
+        player.sendMessage(plugin.colorize("&aTeam " + (isWarp ? "warp" : "home") + " '&e" + labelName + "&a' set successfully at your current location!"));
+    }
+
+    private void handleHome(Player player, String[] args) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        boolean isWarp = args[0].equalsIgnoreCase("warp");
+
+        // Permission check
+        if (!player.hasPermission("ourteam.warp") && !player.hasPermission("ourteam.home")) {
+            player.sendMessage(plugin.colorize("&cYou do not have permission to teleport."));
+            return;
+        }
+
+        String labelName = args.length >= 2 ? args[1].toLowerCase() : (isWarp ? "warp" : "home");
+
+        boolean exists = isWarp ? team.hasWarp(labelName) : team.hasHome(labelName);
+        if (!exists) {
+            player.sendMessage(plugin.colorize("&cThat team " + (isWarp ? "warp" : "home") + " '&e" + labelName + "&c' does not exist."));
+            return;
+        }
+
+        Team.TeamHome targetLoc = isWarp ? team.getWarp(labelName) : team.getHome(labelName);
+        World world = Bukkit.getWorld(targetLoc.getWorld());
+        if (world == null) {
+            player.sendMessage(plugin.colorize("&cYour target world is currently inactive."));
+            return;
+        }
+
+        Location loc = new Location(world, targetLoc.getX(), targetLoc.getY(), targetLoc.getZ(), targetLoc.getYaw(), targetLoc.getPitch());
+        plugin.startTeleport(player, loc, labelName, isWarp);
+    }
+
+    private void handleDelHome(Player player, String[] args) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        boolean isWarp = args[0].equalsIgnoreCase("delwarp");
+
+        if (!plugin.hasTeamPermission(team, player.getUniqueId(), isWarp ? "delwarp" : "delhome")) {
+            player.sendMessage(plugin.colorize("&cHey, your rank does not have permission to delete team " + (isWarp ? "warps" : "homes") + "."));
+            return;
+        }
+
+        if (!player.hasPermission("ourteam.delhome") && !player.hasPermission("ourteam.delwarp")) {
+            player.sendMessage(plugin.colorize("&cYou do not have permission to delete."));
+            return;
+        }
+
+        String labelName = args.length >= 2 ? args[1].toLowerCase() : (isWarp ? "warp" : "home");
+
+        boolean exists = isWarp ? team.hasWarp(labelName) : team.hasHome(labelName);
+        if (!exists) {
+            player.sendMessage(plugin.colorize("&cSpecified team " + (isWarp ? "warp" : "home") + " '&e" + labelName + "&c' does not exist."));
+            return;
+        }
+
+        if (isWarp) {
+            team.deleteWarp(labelName);
+        } else {
+            team.deleteHome(labelName);
+        }
+        plugin.getTeamManager().saveAll();
+
+        player.sendMessage(plugin.colorize("&eSuccessfully deleted team " + (isWarp ? "warp" : "home") + " '&6" + labelName + "&e'."));
+    }
+
+    private int getMaxHomes(Player player) {
+        if (player.hasPermission("ourteam.homes.unlimited")) {
+            return 999;
+        }
+        for (int i = 100; i >= 1; i--) {
+            if (player.hasPermission("ourteam.homes." + i)) {
+                return i;
+            }
+        }
+        return plugin.getConfig().getInt("cooldowns-and-teleportation.max-homes-per-team", 3);
+    }
+
+    private int getMaxWarps(Player player) {
+        if (player.hasPermission("ourteam.warps.unlimited")) {
+            return 999;
+        }
+        for (int i = 100; i >= 1; i--) {
+            if (player.hasPermission("ourteam.warps." + i)) {
+                return i;
+            }
+        }
+        return plugin.getConfig().getInt("cooldowns-and-teleportation.max-warps-per-team", 5);
+    }
+
+    private void handleChatToggle(Player player) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        if (!team.isTeamChatEnabled()) {
+            player.sendMessage(plugin.colorize("&cError: Team chat is currently disabled by team settings."));
+            return;
+        }
+
+        plugin.getTeamManager().toggleTeamChat(player.getUniqueId());
+        boolean isToggled = plugin.getTeamManager().isTeamChatToggled(player.getUniqueId());
+        String modeStr = isToggled ? "TEAM" : "PUBLIC";
+        player.sendMessage(plugin.getMsg("chat-channel-toggled").replace("{state}", modeStr));
+    }
+
+    private void handleInfo(Player player, String[] args) {
+        Team team;
+        if (args.length < 2) {
+            team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+            if (team == null) {
+                player.sendMessage(plugin.getMsg("not-in-team"));
+                return;
             }
         } else {
-            inv.setItem(11, createGuiItem(Material.BARRIER, "&7Information Only", "&fYou do not have administrative permissions", "&fto promote/demote this member."));
-            inv.setItem(15, createGuiItem(Material.BARRIER, "&7Information Only", "&fYou do not have administrative permissions", "&fto kick this member."));
+            team = plugin.getTeamManager().getTeamByName(args[1]);
         }
 
-        // Slot 22: Go back
-        inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Members Roster",
-            "&7Go back to roster menu"
-        ));
+        if (team == null) {
+            player.sendMessage(plugin.colorize("&cSpecified team not found."));
+            return;
+        }
 
-        viewer.openInventory(inv);
+        Player ownerPlayer = Bukkit.getPlayer(team.getOwner());
+        String ownerName = ownerPlayer != null ? ownerPlayer.getName() : Bukkit.getOfflinePlayer(team.getOwner()).getName();
+
+        player.sendMessage(plugin.colorize("&8&m========================================"));
+        player.sendMessage(plugin.colorize("&3&lTEAM DETAILS: &b&l" + team.getName()));
+        player.sendMessage(plugin.colorize("&fDescription: &7" + team.getDescription()));
+        player.sendMessage(plugin.colorize("&fOwner: &e" + ownerName));
+        player.sendMessage(plugin.colorize("&fPvP Friendly Fire: &e" + (team.isFriendlyFireEnabled() ? "&aEnabled" : "&cDisabled")));
+        player.sendMessage(plugin.colorize("&fHas Home Spawn: &e" + (team.hasHome() ? "&aYes" : "&cNo")));
+        player.sendMessage(plugin.colorize("&fMember Count: &7" + team.getMembers().size()));
+        player.sendMessage(plugin.colorize("&fRoster:"));
+        
+        StringBuilder roster = new StringBuilder();
+        for (UUID memberUuid : team.getMembers()) {
+            Player p = Bukkit.getPlayer(memberUuid);
+            if (p != null) {
+                roster.append("&a").append(p.getName()).append("&7, ");
+            } else {
+                roster.append("&7").append(Bukkit.getOfflinePlayer(memberUuid).getName()).append("&7, ");
+            }
+        }
+        if (roster.length() > 4) {
+            roster.setLength(roster.length() - 4);
+        }
+        player.sendMessage(plugin.colorize("  &7" + roster.toString()));
+        player.sendMessage(plugin.colorize("&8&m========================================"));
     }
 
-    /**
-     * Creates and opens the Team Leaderboard GUI (Menu: leaderboard)
-     */
-    public void openLeaderboardMenu(Player player, Team viewerTeam) {
-        String title = plugin.colorize("&#00FFCC&lL E A D E R B O A R D &7- &#FFCC00&lTop Teams");
-        TeamGUIHolder holder = new TeamGUIHolder("leaderboard", viewerTeam.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
+    private void handleList(Player player) {
+        plugin.getGuiManager().openTeamsListMenu(player);
+    }
 
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
-        }
-
-        // Slot  4: Info marker of current viewer's team
-        viewerTeam.recalculateScore(plugin);
-        int vRank = viewerTeam.getRankPosition(plugin);
-        int vScore = viewerTeam.getCachedScore();
-        int totalTeamsCount = plugin.getTeamManager().getAllTeams().size();
-
-        inv.setItem(4, createGuiItem(Material.NETHER_STAR,
-            "&#00FFCC&lYour Team Standing",
-            "&7Core competitive evaluation",
-            "",
-            "&fTeam Profile: &e" + viewerTeam.getName(),
-            "&fLeaderboard Rank: &#FFD700&l#" + vRank + " &7of &f" + totalTeamsCount,
-            "&fTeam Score: &a&l" + vScore + " Points",
-            "",
-            "&7Scores update dynamically based on members,",
-            "&7bank content, and grinding activities."
-        ));
-
-        // Let's sort the teams from highest to lowest score
+    private void handleTop(Player player) {
+        // Fetch all teams
         java.util.List<Team> sorted = new java.util.ArrayList<>(plugin.getTeamManager().getAllTeams());
+        // For each, recalculate score
         for (Team t : sorted) {
             t.recalculateScore(plugin);
         }
+        // Sort from highest to lowest score
         sorted.sort((t1, t2) -> Integer.compare(t2.getCachedScore(), t1.getCachedScore()));
 
-        int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-        int limit = Math.min(7, sorted.size());
+        player.sendMessage(plugin.colorize("&8&m========================================"));
+        player.sendMessage(plugin.colorize("&#33CCFF&lL E A D E R B O A R D &7- &#FFCC00&lTOP 10 TEAMS"));
 
-        for (int i = 0; i < limit; i++) {
-            Team currentTeam = sorted.get(i);
-            String rankPrefix = "";
-            Material blockMaterial = Material.STONE_BUTTON; // default
-
-            switch (i) {
-                case 0:
-                    rankPrefix = "&#FFD700&l【1st】";
-                    blockMaterial = Material.GOLD_BLOCK;
-                    break;
-                case 1:
-                    rankPrefix = "&#C0C0C0&l【2nd】";
-                    blockMaterial = Material.IRON_BLOCK;
-                    break;
-                case 2:
-                    rankPrefix = "&#CD7F32&l【3rd】";
-                    blockMaterial = Material.COPPER_BLOCK;
-                    break;
-                default:
-                    rankPrefix = "&7&l【" + (i + 1) + "th】";
-                    blockMaterial = Material.COAL_BLOCK;
-                    break;
-            }
-
-            double kdr = currentTeam.getDeaths() > 0 ? (double) currentTeam.getKills() / currentTeam.getDeaths() : currentTeam.getKills();
-
-            inv.setItem(slots[i], createGuiItem(blockMaterial,
-                rankPrefix + " &#00FFCC&l" + currentTeam.getName(),
-                "&7Competitive Rank Standing",
-                "",
-                "&f⚡ Score: &#FFCC00&l" + currentTeam.getCachedScore() + " Points",
-                "&f⚡ Members: &e" + currentTeam.getMembers().size() + "/8",
-                "&f⚡ Bank Balance: &a$" + String.format("%,.2f", currentTeam.getBankBalance()),
-                "&f⚡ Combat Stats: &c" + currentTeam.getKills() + " Kills &7| &c" + currentTeam.getDeaths() + " Deaths (KDR: " + String.format("%.2f", kdr) + ")"
-            ));
-        }
-
-        // Slot 22: Go back Arrow
-        inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Dashboard",
-            "&7Go back to main team GUI panel"
-        ));
-
-        player.openInventory(inv);
-    }
-
-    /**
-     * Creates and opens the Join Requests list menu (Menu: requests_list)
-     */
-    public void openRequestsMenu(Player player, Team team) {
-        String title = plugin.colorize("&#33CCFF&lJoin Requests &7» &f" + team.getName());
-        TeamGUIHolder holder = new TeamGUIHolder("requests_list", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
-
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
-            inv.setItem(i, marker);
-        }
-
-        int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-        int idx = 0;
-        java.util.Set<UUID> requestsSet = team.getRequests();
-
-        if (requestsSet.isEmpty()) {
-            inv.setItem(13, createGuiItem(Material.BARRIER,
-                "&c&lNo Active Requests",
-                "&7There are no pending join requests",
-                "&7for your team at this time."
-            ));
+        // Add upper message
+        Team myTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (myTeam != null) {
+            myTeam.recalculateScore(plugin);
+            int myRank = myTeam.getRankPosition(plugin);
+            int total = sorted.size();
+            player.sendMessage(plugin.colorize("&#00FFCCYour Team: &f" + myTeam.getName() + " &7| &#FFCC00Rank: &e#" + myRank + "/" + total + " &7| &e" + myTeam.getCachedScore() + " pts"));
         } else {
-            for (UUID requesterId : requestsSet) {
-                if (idx >= slots.length) break;
-                org.bukkit.OfflinePlayer requester = Bukkit.getOfflinePlayer(requesterId);
-                String name = requester.getName() != null ? requester.getName() : "Unknown Requester";
-                long firstPlayed = requester.getFirstPlayed();
-                String joinDate = firstPlayed > 0 ? new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(firstPlayed)) : "Never";
+            player.sendMessage(plugin.colorize("&cYou are not in a team. Join or create a team to compete!"));
+        }
+        player.sendMessage(plugin.colorize("&8&m========================================"));
 
-                inv.setItem(slots[idx], createMemberSkullItem(requester, "&#33CCFF&l" + name,
-                    "&7Requested to join your team!",
-                    "",
-                    "&f⚡ Server First Joined: &e" + joinDate,
-                    "",
-                    "&7[Admin Actions]",
-                    "&a▶ Left-Click &f(ACCEPT Request)",
-                    "&c◀ Right-Click &f(DECLINE/REJECT Request)"
-                ));
-                idx++;
+        int limit = Math.min(10, sorted.size());
+        if (limit == 0) {
+            player.sendMessage(plugin.colorize("&7No teams have registered yet!"));
+        } else {
+            for (int i = 0; i < limit; i++) {
+                Team team = sorted.get(i);
+                String prefix = "";
+                switch (i) {
+                    case 0: prefix = "&#FFD700&l1st "; break;
+                    case 1: prefix = "&#C0C0C0&l2nd "; break;
+                    case 2: prefix = "&#CD7F32&l3rd "; break;
+                    default: prefix = "&f&l" + (i + 1) + "th "; break;
+                }
+                player.sendMessage(plugin.colorize(prefix + " &#00FFCC" + team.getName() + " &7- &e" + team.getCachedScore() + " pts &7(&e" + team.getMembers().size() + " &7members)"));
             }
         }
-
-        // Slot 22: Return to Dashboard
-        inv.setItem(22, createGuiItem(Material.ARROW, 
-            "&e&l◀ Return to Dashboard", 
-            "&7Go back to main team GUI panel"
-        ));
-
-        player.openInventory(inv);
+        player.sendMessage(plugin.colorize("&8&m========================================"));
     }
 
-    /**
-     * Creates and opens the Teams List GUI (Menu: teams_list)
-     */
-    public void openTeamsListMenu(Player player) {
-        String title = plugin.colorize("&#33CCFF&lALL ACTIVE TEAMS");
-        Team viewerTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
-        String tName = viewerTeam != null ? viewerTeam.getName() : "none";
-        TeamGUIHolder holder = new TeamGUIHolder("list", tName);
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
-
-        // Fill top and bottom with decorative glass panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 9; i++) {
-            inv.setItem(i, marker);
+    private void handleEchest(Player player) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.colorize("&c[OurTeam] You must be in a team to access the team Enderchest!"));
+            return;
         }
-        for (int i = 45; i < 54; i++) {
-            inv.setItem(i, marker);
+        if (team.isEchestLocked() && !player.hasPermission("ourteam.admin") && !player.isOp()) {
+            player.sendMessage(plugin.colorize("&c[OurTeam] Your team's shared virtual Enderchest is currently LOCKED by an administrator!"));
+            return;
         }
-
-        // Slot 4: Info book
-        inv.setItem(4, createGuiItem(Material.BOOK,
-            "&#33CCFF&lOurTeam Guilds Directory",
-            "&7A directory of all active groups.",
-            "",
-            "&f💡 &bLeft/Right click &7on any team item",
-            "   &7to directly transmit a Join Request!",
-            "",
-            "&f💡 &7Pending requests can be approved",
-            "   &7by that team's moderators/owner."
-        ));
-
-        // Slot 49: Close barrier
-        inv.setItem(49, createGuiItem(Material.BARRIER,
-            "&c&lClose Menu",
-            "&7Return to game"
-        ));
-
-        // Let's populate the active teams in the grid slots (9 to 44)
-        java.util.List<Team> teams = plugin.getTeamManager().getAllTeams();
-        int slotIdx = 9;
-        for (Team team : teams) {
-            if (slotIdx > 44) break; // limit to 36 teams per page to stay in grid
-
-            org.bukkit.OfflinePlayer owner = Bukkit.getOfflinePlayer(team.getOwner());
-            String ownerName = owner.getName() != null ? owner.getName() : "Unknown";
-            
-            String status = team.isOpenJoin() ? "&2&lOPEN TO ALL" : "&6&lAPPLICATIONS ONLY";
-            inv.setItem(slotIdx, createMemberSkullItem(owner,
-                "&#33CCFF&l" + team.getName(),
-                "&7Click to apply/join this team",
-                "",
-                "&fOwner/Leader: &b" + ownerName,
-                "&fActive Members: &e" + team.getMembers().size() + "/8",
-                "&fPolicy Status: " + status,
-                "&fBank Wealth: &a$" + String.format("%,.0f", team.getBankBalance()),
-                "",
-                "&a▶ Click to send Direct Join Request"
-            ));
-            slotIdx++;
+        if (team.isSystemLocked() && !player.hasPermission("ourteam.admin") && !player.isOp()) {
+            player.sendMessage(plugin.colorize("&c[OurTeam] Your team is currently LOCKED by a server administrator!"));
+            player.sendMessage(plugin.colorize("&cReason: &7" + team.getLockReason()));
+            return;
         }
-
-        player.openInventory(inv);
+        if (!plugin.hasChestPermission(team, player.getUniqueId(), "open-chest")) {
+            player.sendMessage(plugin.colorize("&cError: You do not have the 'open-chest' permission for this team container."));
+            return;
+        }
+        player.openInventory(team.getEchest());
+        player.sendMessage(plugin.colorize("&a[OurTeam] Opening team's shared virtual Enderchest inventory... Close it to save."));
     }
 
-    /* Interface helpers */
-    private ItemStack createGuiItem(Material material, String name, String... lore) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(plugin.colorize(name));
-            List<String> coloredLore = new ArrayList<>();
-            for (String line : lore) {
-                coloredLore.add(plugin.colorize(line));
-            }
-            meta.setLore(coloredLore);
-            item.setItemMeta(meta);
+    private void handleBank(Player player) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
         }
+        if (!plugin.hasTeamPermission(team, player.getUniqueId(), "bank")) {
+            player.sendMessage(plugin.colorize("&cError: Your rank is not authorized to access the Team Bank."));
+            return;
+        }
+        openBankInventory(player, team, plugin);
+    }
+
+    public static void openBankInventory(Player player, Team team, OurTeam plugin) {
+        plugin.getGuiManager().openBankMenu(player, team);
+    }
+
+    private static org.bukkit.inventory.ItemStack createGuiItem(org.bukkit.Material mat, String name, String lore, OurTeam plugin) {
+        org.bukkit.inventory.ItemStack item = new org.bukkit.inventory.ItemStack(mat);
+        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(plugin.colorize(name));
+        java.util.List<String> l = new java.util.ArrayList<>();
+        l.add(plugin.colorize(lore));
+        l.add(plugin.colorize("&eClick to execute!"));
+        meta.setLore(l);
+        item.setItemMeta(meta);
         return item;
     }
 
-    private ItemStack createMemberSkullItem(org.bukkit.OfflinePlayer player, String name, String... lore) {
-        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) item.getItemMeta();
-        if (meta != null) {
-            meta.setOwningPlayer(player);
-            meta.setDisplayName(plugin.colorize(name));
-            List<String> coloredLore = new ArrayList<>();
-            for (String line : lore) {
-                coloredLore.add(plugin.colorize(line));
-            }
-            meta.setLore(coloredLore);
-            item.setItemMeta(meta);
+    private void handleDisband(Player player) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
         }
-        return item;
+
+        if (!team.getOwner().equals(player.getUniqueId())) {
+            player.sendMessage(plugin.colorize("&cOnly the Team Owner has the authority to disband the team."));
+            return;
+        }
+
+        // Notify teammates before disbanding
+        for (UUID memberId : team.getMembers()) {
+            Player p = Bukkit.getPlayer(memberId);
+            if (p != null) {
+                p.sendMessage(plugin.colorize("&c&l[OurTeam] Your team " + team.getName() + " has been disbanded by the owner."));
+            }
+        }
+        
+        plugin.getTeamManager().disbandTeam(team);
+        player.sendMessage(plugin.colorize("&aYour team has been successfully disbanded."));
+    }
+
+    private void handlePromote(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team admin <player>"));
+            return;
+        }
+
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        if (!team.getOwner().equals(player.getUniqueId())) {
+            player.sendMessage(plugin.colorize("&cOnly the Team Owner can promote teammates."));
+            return;
+        }
+
+        Player target = Bukkit.getPlayer(args[1]);
+        UUID targetUuid;
+        String targetName;
+
+        if (target != null) {
+            targetUuid = target.getUniqueId();
+            targetName = target.getName();
+        } else {
+            targetUuid = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+            targetName = args[1];
+        }
+
+        if (!team.isMember(targetUuid)) {
+            player.sendMessage(plugin.colorize("&cThat player is not in your team."));
+            return;
+        }
+
+        if (team.getRole(targetUuid).equalsIgnoreCase("OWNER")) {
+            player.sendMessage(plugin.colorize("&cYou cannot promote the Team Owner!"));
+            return;
+        }
+
+        boolean success = team.promote(targetUuid);
+        if (success) {
+            plugin.getTeamManager().saveAll();
+            player.sendMessage(plugin.colorize("&aSuccessfully promoted &e" + targetName + " &ato &bAdmin&a!"));
+            if (target != null && target.isOnline()) {
+                target.sendMessage(plugin.colorize("&a&lYou have been promoted to Admin of team &b" + team.getName() + "&a!"));
+            }
+            // Notify team members
+            for (UUID memberId : team.getMembers()) {
+                Player p = Bukkit.getPlayer(memberId);
+                if (p != null && !p.getUniqueId().equals(player.getUniqueId()) && (!p.getUniqueId().equals(targetUuid))) {
+                    p.sendMessage(plugin.colorize("&e" + targetName + " has been promoted to Admin."));
+                }
+            }
+        } else {
+            player.sendMessage(plugin.colorize("&cThat player is already an Admin or higher rank."));
+        }
+    }
+
+    private void handleDemote(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team demote <player>"));
+            return;
+        }
+
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        if (!team.getOwner().equals(player.getUniqueId())) {
+            player.sendMessage(plugin.colorize("&cOnly the Team Owner can demote teammates."));
+            return;
+        }
+
+        Player target = Bukkit.getPlayer(args[1]);
+        UUID targetUuid;
+        String targetName;
+
+        if (target != null) {
+            targetUuid = target.getUniqueId();
+            targetName = target.getName();
+        } else {
+            targetUuid = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+            targetName = args[1];
+        }
+
+        if (!team.isMember(targetUuid)) {
+            player.sendMessage(plugin.colorize("&cThat player is not in your team."));
+            return;
+        }
+
+        if (team.getRole(targetUuid).equalsIgnoreCase("OWNER")) {
+            player.sendMessage(plugin.colorize("&cYou cannot demote the Team Owner!"));
+            return;
+        }
+
+        boolean success = team.demote(targetUuid);
+        if (success) {
+            plugin.getTeamManager().saveAll();
+            player.sendMessage(plugin.colorize("&eSuccessfully demoted &c" + targetName + " &eto &7Member&e."));
+            if (target != null && target.isOnline()) {
+                target.sendMessage(plugin.colorize("&c&lYou have been demoted to Member of team &b" + team.getName() + "&c."));
+            }
+            // Notify team members
+            for (UUID memberId : team.getMembers()) {
+                Player p = Bukkit.getPlayer(memberId);
+                if (p != null && !p.getUniqueId().equals(player.getUniqueId()) && (!p.getUniqueId().equals(targetUuid))) {
+                    p.sendMessage(plugin.colorize("&e" + targetName + " has been demoted to standard Member."));
+                }
+            }
+        } else {
+            player.sendMessage(plugin.colorize("&cThat player is already a standard Member."));
+        }
+    }
+
+    private void handleMsg(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team msg <message>"));
+            return;
+        }
+
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        StringBuilder msgBuilder = new StringBuilder();
+        for (int i = 1; i < args.length; i++) {
+            msgBuilder.append(args[i]).append(" ");
+        }
+        String message = msgBuilder.toString().trim();
+
+        String format = plugin.getConfig().getString("chat-settings.team-chat-format", "&3[Team Chat] &b{player}&7: &f{message}");
+        String formattedMessage = plugin.colorize(format
+                .replace("{player}", player.getName())
+                .replace("{team}", team.getName())
+                .replace("{message}", message)
+        );
+
+        for (UUID memberUuid : team.getMembers()) {
+            Player teammate = Bukkit.getPlayer(memberUuid);
+            if (teammate != null && teammate.isOnline()) {
+                teammate.sendMessage(formattedMessage);
+            }
+        }
+        plugin.getLogger().info("[OurTeam Msg - " + team.getName() + "] " + player.getName() + ": " + message);
+    }
+
+    private void handleRequest(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team request <teamName>"));
+            return;
+        }
+
+        if (!player.hasPermission("ourteam.request")) {
+            player.sendMessage(plugin.colorize("&cYou do not have permission to request to join teams (ourteam.request)."));
+            return;
+        }
+
+        String teamName = args[1];
+        Team targetTeam = plugin.getTeamManager().getTeamByName(teamName);
+
+        if (targetTeam == null) {
+            player.sendMessage(plugin.colorize("&cSpecified team '&e" + teamName + "&c' not found."));
+            return;
+        }
+
+        if (targetTeam.isMember(player.getUniqueId())) {
+            player.sendMessage(plugin.colorize("&cYou are already a member of this team."));
+            return;
+        }
+
+        if (targetTeam.hasRequest(player.getUniqueId())) {
+            player.sendMessage(plugin.colorize("&cYou have already sent a pending join request to &b" + targetTeam.getName() + "&c."));
+            return;
+        }
+
+        // Add request
+        targetTeam.addRequest(player.getUniqueId());
+        plugin.getTeamManager().saveAll();
+
+        player.sendMessage(plugin.colorize("&aYour request to join &b" + targetTeam.getName() + " &ahas been successfully transmitted!"));
+
+        // Notify officers
+        for (UUID memberId : targetTeam.getMembers()) {
+            if (targetTeam.isModeratorOrHigher(memberId)) {
+                Player officer = Bukkit.getPlayer(memberId);
+                if (officer != null && officer.isOnline()) {
+                    officer.sendMessage(plugin.colorize("&b&l[OurTeam] &e" + player.getName() + " &7has requested to join your team! Use &a/team accept " + player.getName() + " &7or &a/team acceptrequest " + player.getName() + " &7to accept him."));
+                }
+            }
+        }
+    }
+
+    private void handleAcceptRequest(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(plugin.colorize("&cUsage: /team acceptrequest <playerName>"));
+            return;
+        }
+
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        if (!plugin.hasTeamPermission(team, player.getUniqueId(), "acceptrequest")) {
+            player.sendMessage(plugin.colorize("&cHey, your rank does not have permission to accept team join requests."));
+            return;
+        }
+
+        String targetName = args[1];
+        Player targetPlayer = Bukkit.getPlayer(targetName);
+        UUID targetUuid = targetPlayer != null ? targetPlayer.getUniqueId() : Bukkit.getOfflinePlayer(targetName).getUniqueId();
+
+        if (!team.hasRequest(targetUuid)) {
+            player.sendMessage(plugin.colorize("&cPlayer '&e" + targetName + "&c' has not requested to join your team."));
+            return;
+        }
+
+        int maxPlayers = plugin.getConfig().getInt("team-settings.max-players-per-team", 8);
+        if (maxPlayers != -1 && team.getMembers().size() >= maxPlayers) {
+            player.sendMessage(plugin.colorize("&cYour team is already full (max " + maxPlayers + " players)."));
+            return;
+        }
+
+        // Remove teammate from their old team if currently in one (fluid transition)
+        Team oldTeam = plugin.getTeamManager().getPlayerTeam(targetUuid);
+        if (oldTeam != null) {
+            if (targetPlayer != null) {
+                plugin.getTeamManager().removePlayerFromTeam(targetPlayer, oldTeam);
+            } else {
+                oldTeam.removeMember(targetUuid);
+                plugin.getTeamManager().saveAll();
+            }
+        }
+
+        // Remove from requests list
+        team.removeRequest(targetUuid);
+
+        // Add to team
+        if (targetPlayer != null) {
+            plugin.getTeamManager().addPlayerToTeam(targetPlayer, team);
+        } else {
+            team.addMember(targetUuid);
+        }
+        plugin.getTeamManager().saveAll();
+
+        player.sendMessage(plugin.colorize("&aRequest from &e" + targetName + " &aaccepted. They are now on the roster!"));
+
+        if (targetPlayer != null) {
+            targetPlayer.sendMessage(plugin.colorize("&a&lYour request to join &b" + team.getName() + " &awas accepted by &e" + player.getName() + "&a! Welcome."));
+            plugin.updateTabFormatting(targetPlayer);
+        }
+
+        // Notify team
+        for (UUID memberId : team.getMembers()) {
+            Player p = Bukkit.getPlayer(memberId);
+            if (p != null) {
+                p.sendMessage(plugin.colorize("&e" + targetName + " has joined the team."));
+                plugin.updateTabFormatting(p);
+            }
+        }
+    }
+
+    private void sendHelp(Player player) {
+        player.sendMessage(plugin.colorize("&8&m========================================"));
+        player.sendMessage(plugin.colorize("&3&lOurTeam Command Reference:"));
+        player.sendMessage(plugin.colorize("&e/team create <name> &7- Form a new team"));
+        player.sendMessage(plugin.colorize("&e/team invite <player> &7- Invite teammate (Admin+)"));
+        player.sendMessage(plugin.colorize("&e/team request <team> &7- Request to join another team"));
+        player.sendMessage(plugin.colorize("&e/team accept <team|player> &7- Accept invite or player join request"));
+        player.sendMessage(plugin.colorize("&e/team leave &7- Exit your current team (Owner leaves = disband)"));
+        player.sendMessage(plugin.colorize("&e/team kick <player> &7- Remove player from team (Admin+)"));
+        player.sendMessage(plugin.colorize("&e/team disband &7- Completely delete the team (Owner only)"));
+        player.sendMessage(plugin.colorize("&e/team admin <player> &7- Give Admin role to teammate (Owner only)"));
+        player.sendMessage(plugin.colorize("&e/team demote <player> &7- Lower teammate's internal rank (Owner only)"));
+        player.sendMessage(plugin.colorize("&e/team msg <message> &7- Message online teammates quickly"));
+        player.sendMessage(plugin.colorize("&e/team echest &7- Access the shared team virtual Enderchest"));
+        player.sendMessage(plugin.colorize("&e/team bank &7- Access the dynamic team bank and earn interest"));
+        player.sendMessage(plugin.colorize("&e/team chat &7- Toggle team-only chat channels"));
+        player.sendMessage(plugin.colorize("&e/team pvp &7- Toggle friendly-fire PvP protection"));
+        player.sendMessage(plugin.colorize("&e/team sethome [name] &7- Set named/default home spawn (Admin+)"));
+        player.sendMessage(plugin.colorize("&e/team home [name] &7- Teleport to a team home/spawn"));
+        player.sendMessage(plugin.colorize("&e/team setwarp <name> &7- Set a named team warp (Admin+)"));
+        player.sendMessage(plugin.colorize("&e/team warp <name> &7- Teleport to a team warp"));
+        player.sendMessage(plugin.colorize("&e/team delhome [name] &7- Delete a team home/warp (Admin+)"));
+        player.sendMessage(plugin.colorize("&e/team info [name] &7- Display details of your/any team"));
+        player.sendMessage(plugin.colorize("&e/team list &7- Show all registered server teams"));
+        player.sendMessage(plugin.colorize("&8&m========================================"));
+    }
+
+    public String getCanonicalSubCommand(String sub) {
+        if (sub == null) return "";
+        sub = sub.toLowerCase();
+        switch (sub) {
+            case "menu":
+            case "gui":
+                return "menu";
+            case "settings":
+                return "settings";
+            case "create":
+                return "create";
+            case "invite":
+            case "invited":
+                return "invite";
+            case "join":
+            case "accept":
+                return "join";
+            case "request":
+                return "request";
+            case "acceptrequest":
+                return "acceptrequest";
+            case "leave":
+                return "leave";
+            case "echest":
+            case "chest":
+                return "echest";
+            case "kick":
+                return "kick";
+            case "disband":
+                return "disband";
+            case "friendlyfire":
+            case "ff":
+            case "pvp":
+                return "friendlyfire";
+            case "admin":
+            case "promote":
+                return "promote";
+            case "demote":
+                return "demote";
+            case "msg":
+                return "msg";
+            case "warp":
+            case "home":
+                return "warp";
+            case "setwarp":
+            case "sethome":
+                return "setwarp";
+            case "delwarp":
+            case "delhome":
+                return "delwarp";
+            case "chat":
+            case "c":
+                return "chat";
+            case "info":
+                return "info";
+            case "bank":
+                return "bank";
+            case "list":
+                return "list";
+            case "top":
+                return "top";
+            default:
+                return sub;
+        }
+    }
+
+    public boolean isCommandEnabled(String canonical) {
+        String path = "command-toggles." + canonical;
+        if (plugin.getConfig().contains(path)) {
+            Object val = plugin.getConfig().get(path);
+            if (val instanceof Boolean) {
+                return (Boolean) val;
+            }
+            if (val instanceof String) {
+                String str = (String) val;
+                return !str.equalsIgnoreCase("off") && !str.equalsIgnoreCase("false") && !str.equalsIgnoreCase("disabled");
+            }
+        }
+        return true;
+    }
+
+    private boolean isMutatingCommand(String canonical) {
+        switch (canonical) {
+            case "settings":
+            case "join":
+            case "leave":
+            case "disband":
+            case "invite":
+            case "kick":
+            case "promote":
+            case "demote":
+            case "friendlyfire":
+            case "setwarp":
+            case "delwarp":
+            case "acceptrequest":
+            case "request":
+            case "bank":
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void handlePayToggle(Player player) {
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team == null) {
+            player.sendMessage(plugin.getMsg("not-in-team"));
+            return;
+        }
+
+        if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+            player.sendMessage(plugin.colorize("&cOnly the Team Owner and Admins can toggle TeamPay settings."));
+            return;
+        }
+
+        boolean newVal = !team.isPayToggle();
+        team.setPayToggle(newVal);
+        plugin.getTeamManager().saveTeam(team);
+
+        String stateStr = newVal ? "&a&lENABLED" : "&c&lDISABLED";
+        String msg = plugin.colorize("&6&l[TeamPay] &fDeposits for our team bank have been set to: " + stateStr);
+
+        for (UUID memberId : team.getMembers()) {
+            Player p = Bukkit.getServer().getPlayer(memberId);
+            if (p != null) {
+                p.sendMessage(msg);
+            }
+        }
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 1) {
+            List<String> list = new ArrayList<>();
+            list.add("allthecommandseen");
+            list.add("top");
+            List<String> suggestions = new ArrayList<>();
+            for (String s : list) {
+                if (s.toLowerCase().startsWith(args[0].toLowerCase())) {
+                    suggestions.add(s);
+                }
+            }
+            return suggestions;
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("allthecommandseen")) {
+            List<String> subCommands = java.util.Arrays.asList(
+                "create", "invite", "join", "accept", "request", "acceptrequest", "leave", "kick", "disband", "promote", "demote", "msg", "chat", "pvp", "sethome", "home", "setwarp", "warp", "delhome", "delwarp", "info", "bank", "list", "paytoggle", "gui", "settings", "top"
+            );
+            List<String> suggestions = new ArrayList<>();
+            for (String sub : subCommands) {
+                if (sub.toLowerCase().startsWith(args[1].toLowerCase())) {
+                    suggestions.add(sub);
+                }
+            }
+            return suggestions;
+        }
+        return Collections.emptyList();
     }
 }
