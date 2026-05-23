@@ -17,6 +17,8 @@ import java.util.UUID;
  */
 public class PlayerListener implements Listener {
 
+    public static final java.util.Set<UUID> pendingDisbands = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     private final OurTeam plugin;
 
     public PlayerListener(OurTeam plugin) {
@@ -92,6 +94,31 @@ public class PlayerListener implements Listener {
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+
+        if (pendingDisbands.contains(player.getUniqueId())) {
+            event.setCancelled(true);
+            pendingDisbands.remove(player.getUniqueId());
+            String msg = event.getMessage().trim();
+            if (msg.equalsIgnoreCase("yes")) {
+                if (team != null && team.getOwner().equals(player.getUniqueId())) {
+                    for (UUID memberUuid : team.getMembers()) {
+                        Player p = Bukkit.getPlayer(memberUuid);
+                        if (p != null && p.isOnline()) {
+                            p.sendMessage(plugin.colorize("&c&l[OurTeam] &e" + player.getName() + " &fhas &c&lBANNED and DISBANDED &fthe team. All data removed!"));
+                        }
+                    }
+                    plugin.getTeamManager().disbandTeam(team);
+                    player.sendMessage(plugin.colorize("&aYour team has been successfully banned and disbanded."));
+                } else {
+                    player.sendMessage(plugin.colorize("&cError: You are no longer the owner or the team has disbanded."));
+                }
+            } else if (msg.equalsIgnoreCase("no")) {
+                player.sendMessage(plugin.colorize("&eBan application cancelled. Your team remains active."));
+            } else {
+                player.sendMessage(plugin.colorize("&cInvalid response. Type &eyes &cor &eno. &cBan application aborted."));
+            }
+            return;
+        }
 
         if (team == null) {
             return;
