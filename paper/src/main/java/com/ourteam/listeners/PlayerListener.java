@@ -25,8 +25,36 @@ public class PlayerListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
         // Enforce TAB format formatting immediately when player connects
-        plugin.updateTabFormatting(event.getPlayer());
+        plugin.updateTabFormatting(player);
+
+        // Teammate login alert
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team != null && team.isLoginAlertsEnabled()) {
+            for (UUID memberId : team.getMembers()) {
+                if (memberId.equals(player.getUniqueId())) continue;
+                Player teammate = Bukkit.getPlayer(memberId);
+                if (teammate != null && teammate.isOnline()) {
+                    teammate.sendMessage(plugin.colorize("&7[Teammate Log] &b" + player.getName() + " &7joined the server!"));
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (team != null && team.isLoginAlertsEnabled()) {
+            for (UUID memberId : team.getMembers()) {
+                if (memberId.equals(player.getUniqueId())) continue;
+                Player teammate = Bukkit.getPlayer(memberId);
+                if (teammate != null && teammate.isOnline()) {
+                    teammate.sendMessage(plugin.colorize("&7[Teammate Log] &b" + player.getName() + " &7quit the server!"));
+                }
+            }
+        }
     }
 
     @EventHandler
@@ -71,6 +99,12 @@ public class PlayerListener implements Listener {
 
         // 1. Is team chat toggled?
         if (plugin.getTeamManager().isTeamChatToggled(player.getUniqueId())) {
+            if (!team.isTeamChatEnabled()) {
+                plugin.getTeamManager().toggleTeamChat(player.getUniqueId());
+                player.sendMessage(plugin.colorize("&c[OurTeam] Team Chat has been disabled by team settings. Switching you back to PUBLIC chat."));
+                event.setCancelled(true);
+                return;
+            }
             event.setCancelled(true); // Stop standard public chat distribution
 
             String format = plugin.getConfig().getString("chat-settings.team-chat-format", "&3[Team Chat] &b{player}&7: &f{message}");
@@ -225,26 +259,47 @@ public class PlayerListener implements Listener {
     }
 
     private void executeDirectTransaction(Player player, Team team, double amount, boolean isDeposit) {
+        if (plugin.getEconomy() == null) {
+            player.sendMessage(plugin.colorize("&cError: Economy plugin is unavailable."));
+            return;
+        }
         if (isDeposit) {
+            if (!team.isPayToggle() && !team.isAdminOrHigher(player.getUniqueId())) {
+                player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
+                return;
+            }
             double pBalance = plugin.getEconomy().getBalance(player);
             if (pBalance < amount) {
                 player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", pBalance) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
                 return;
             }
-            plugin.getEconomy().withdrawPlayer(player, amount);
-            team.addBankBalance(amount);
-            plugin.getTeamManager().saveTeam(team);
-            player.sendMessage(plugin.colorize("&a[Bank] Deposited &e$" + String.format("%,.0f", amount) + " &ainto team bank!"));
+            net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().withdrawPlayer(player, amount);
+            if (response.transactionSuccess()) {
+                team.addBankBalance(amount);
+                team.addMemberDeposit(player.getUniqueId(), amount);
+                plugin.getTeamManager().saveTeam(team);
+                player.sendMessage(plugin.colorize("&a[Bank] Deposited &e$" + String.format("%,.0f", amount) + " &ainto team bank!"));
+            } else {
+                player.sendMessage(plugin.colorize("&cError: Deposit failed! Reason: " + response.errorMessage));
+            }
         } else {
+            if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can withdraw team funds."));
+                return;
+            }
             double tBalance = team.getBankBalance();
             if (tBalance < amount) {
                 player.sendMessage(plugin.colorize("&cError: Team bank only has $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
                 return;
             }
-            team.removeBankBalance(amount);
-            plugin.getEconomy().depositPlayer(player, amount);
-            plugin.getTeamManager().saveTeam(team);
-            player.sendMessage(plugin.colorize("&a[Bank] Withdrew &e$" + String.format("%,.0f", amount) + " &afrom team bank!"));
+            net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, amount);
+            if (response.transactionSuccess()) {
+                team.removeBankBalance(amount);
+                plugin.getTeamManager().saveTeam(team);
+                player.sendMessage(plugin.colorize("&a[Bank] Withdrew &e$" + String.format("%,.0f", amount) + " &afrom team bank!"));
+            } else {
+                player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Reason: " + response.errorMessage));
+            }
         }
         com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
     }
@@ -284,30 +339,73 @@ public class PlayerListener implements Listener {
                 }
 
                 if (plugin.getEconomy() == null) {
-                    player.sendMessage(plugin.colorize("&cError: Vault economy integration is unavailable."));
+                    if (action.equalsIgnoreCase("DEPOSIT")) {
+                        if (!team.isPayToggle() && !team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                            player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
+                            com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
+                            return;
+                        }
+                        team.addBankBalance(amount);
+                        team.addMemberDeposit(player.getUniqueId(), amount);
+                        plugin.getTeamManager().saveTeam(team);
+                        player.sendMessage(plugin.colorize("&a[Simulated Bank] Deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
+                    } else if (action.equalsIgnoreCase("WITHDRAW")) {
+                        if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                            player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can withdraw team funds."));
+                            com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
+                            return;
+                        }
+                        double tBalance = team.getBankBalance();
+                        if (tBalance < amount) {
+                            player.sendMessage(plugin.colorize("&cError: Your team bank only holds $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
+                            com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
+                            return;
+                        }
+                        team.removeBankBalance(amount);
+                        plugin.getTeamManager().saveTeam(team);
+                        player.sendMessage(plugin.colorize("&a[Simulated Bank] Withdrew &e$" + String.format("%,.2f", amount) + " &afrom team bank!"));
+                    }
+                    com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
                     return;
                 }
 
                 if (action.equalsIgnoreCase("DEPOSIT")) {
+                    if (!team.isPayToggle() && !team.isAdminOrHigher(player.getUniqueId())) {
+                        player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
+                        return;
+                    }
                     double pBalance = plugin.getEconomy().getBalance(player);
                     if (pBalance < amount) {
                         player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", pBalance) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
                         return;
                     }
-                    plugin.getEconomy().withdrawPlayer(player, amount);
-                    team.addBankBalance(amount);
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&a[Bank] Custom deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
+                    net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().withdrawPlayer(player, amount);
+                    if (response.transactionSuccess()) {
+                        team.addBankBalance(amount);
+                        team.addMemberDeposit(player.getUniqueId(), amount);
+                        plugin.getTeamManager().saveTeam(team);
+                        player.sendMessage(plugin.colorize("&a[Bank] Custom deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
+                    } else {
+                        player.sendMessage(plugin.colorize("&cError: Custom deposit failed! Reason: " + response.errorMessage));
+                    }
                 } else if (action.equalsIgnoreCase("WITHDRAW")) {
+                    if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                        player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can withdraw team funds."));
+                        return;
+                    }
                     double tBalance = team.getBankBalance();
                     if (tBalance < amount) {
                         player.sendMessage(plugin.colorize("&cError: Your team bank only holds $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
                         return;
                     }
-                    team.removeBankBalance(amount);
-                    plugin.getEconomy().depositPlayer(player, amount);
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&a[Bank] Custom withdrew &e$" + String.format("%,.2f", amount) + " &afrom team bank!"));
+                    net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, amount);
+                    if (response.transactionSuccess()) {
+                        team.removeBankBalance(amount);
+                        plugin.getTeamManager().saveTeam(team);
+                        player.sendMessage(plugin.colorize("&a[Bank] Custom withdrew &e$" + String.format("%,.2f", amount) + " &afrom team bank!"));
+                    } else {
+                        player.sendMessage(plugin.colorize("&cError: Custom withdrawal failed! Reason: " + response.errorMessage));
+                    }
                 }
 
                 // Re-open GUI
@@ -332,6 +430,9 @@ public class PlayerListener implements Listener {
         Team victimTeam = plugin.getTeamManager().getPlayerTeam(victim.getUniqueId());
 
         if (killerTeam != null && victimTeam != null && !killerTeam.getId().equals(victimTeam.getId())) {
+            killerTeam.addKill();
+            victimTeam.addDeath();
+
             long spamThresholdMs = plugin.getConfig().getLong("team-score.spam-threshold-seconds", 60L) * 1000L;
             UUID killerUuid = killer.getUniqueId();
             UUID victimUuid = victim.getUniqueId();
@@ -370,6 +471,34 @@ public class PlayerListener implements Listener {
 
             killer.sendMessage(plugin.colorize("&a[OurTeam] Defeated &e" + victim.getName() + "&a! Your team gained &e+" + pointsPerKill + " &agrinding points."));
             victim.sendMessage(plugin.colorize("&c[OurTeam] Defeated by &e" + killer.getName() + "&c! Your team lost &e-" + pointsLostPerDeath + " &agrinding points."));
+        }
+    }
+
+    @EventHandler
+    public void onPlayerMove(org.bukkit.event.player.PlayerMoveEvent event) {
+        if (event.getFrom().getBlockX() != event.getTo().getBlockX() ||
+            event.getFrom().getBlockY() != event.getTo().getBlockY() ||
+            event.getFrom().getBlockZ() != event.getTo().getBlockZ()) {
+            
+            Player player = event.getPlayer();
+            if (plugin.getConfig().getBoolean("cooldowns-and-teleportation.cancel-on-movement", true)) {
+                if (plugin.getActiveTeleports().containsKey(player.getUniqueId())) {
+                    plugin.cancelTeleport(player, false, true);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerDamage(org.bukkit.event.entity.EntityDamageEvent event) {
+        if (event.isCancelled()) return;
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            if (plugin.getConfig().getBoolean("cooldowns-and-teleportation.cancel-on-damage", true)) {
+                if (plugin.getActiveTeleports().containsKey(player.getUniqueId())) {
+                    plugin.cancelTeleport(player, true);
+                }
+            }
         }
     }
 }
