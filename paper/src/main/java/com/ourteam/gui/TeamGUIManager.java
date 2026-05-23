@@ -59,15 +59,15 @@ public class TeamGUIManager {
             "&a▶ Click to view team members roster"
         ));
 
-        // Slot 12: Join Requests
-        int requestCount = team.getRequests().size();
+        // Slot 12: Ally Diplomacy / System
         inv.setItem(12, createGuiItem(Material.SHIELD, 
-            "&#33CCFF&lJoin Requests &7(" + requestCount + ")", 
-            "&7Status: Pending Applications Hub",
+            "&#33CCFFAlly Diplomacy Hub", 
+            "&7Status: Active Treaties & Pacts",
             "",
-            "&fPending Requests: &e" + requestCount,
+            "&fForm coalitions, declare non-aggression",
+            "&fpacts, and reinforce allied groups.",
             "",
-            "&a▶ Click to manage Join Requests"
+            "&a▶ Click to manage team alliances"
         ));
 
         // Slot 13: Team Homes & Warps. Dynamically shown ONLY if at least 1 home or 1 warp is set!
@@ -133,23 +133,79 @@ public class TeamGUIManager {
     }
 
     /**
-     * Creates and opens the Team Settings sub-menu (Menu: settings)
+     * Creates and opens the Ally Diplomacy / System GUI (Menu: alliances)
      */
-    public void openSettingsMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FF6600&lTeam Settings Panel");
-        TeamGUIHolder holder = new TeamGUIHolder("settings", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
+    public void openAlliesMenu(Player player, Team team) {
+        String title = plugin.colorize("&#33CCFFAlly Diplomacy Hub");
+        TeamGUIHolder holder = new TeamGUIHolder("alliances", team.getName());
+        Inventory inv = Bukkit.createInventory(holder, 54, title);
 
         // Fill background with decorative panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < 9; i++) {
+            inv.setItem(i, marker);
+        }
+        for (int i = 45; i < 54; i++) {
+            inv.setItem(i, marker);
+        }
+
+        // Slot 4: Info plaque
+        inv.setItem(4, createGuiItem(Material.NETHER_STAR,
+            "&#33CCFFAlliance & Diplomacy Overview",
+            "&7Collaborate with other peer groups on the server.",
+            "",
+            "&f⚡ &7Allies cannot deal friendly fire to one another.",
+            "&f⚡ &7Form strong networks to coordinate base defense."
+        ));
+
+        // Slot 49: Return Arrow
+        inv.setItem(49, createGuiItem(Material.ARROW,
+            "&e◀ Return to Dashboard",
+            "&7Go back to main team GUI panel"
+        ));
+
+        // List other online/active teams in slots 9-44!
+        int slotIdx = 9;
+        java.util.List<Team> sorted = new java.util.ArrayList<>(plugin.getTeamManager().getAllTeams());
+        for (Team otherTeam : sorted) {
+            if (otherTeam.getName().equalsIgnoreCase(team.getName())) continue; // Skip own team
+            if (slotIdx > 44) break;
+
+            org.bukkit.OfflinePlayer owner = Bukkit.getOfflinePlayer(otherTeam.getOwner());
+            inv.setItem(slotIdx, createMemberSkullItem(owner, "&#33CCFF" + otherTeam.getName(),
+                "&7Status: Active Team",
+                "&fOwner: &e" + (owner.getName() != null ? owner.getName() : "Unknown"),
+                "&fMembers: &7" + otherTeam.getMembers().size() + "/8",
+                "",
+                "&a▶ Click to send alliance proposal!"
+            ));
+            slotIdx++;
+        }
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Creates and opens the Team Settings sub-menu (Menu: settings)
+     */
+    public void openSettingsMenu(Player player, Team team) {
+        String title = plugin.colorize("&#FF9933Team Settings Panel");
+        TeamGUIHolder holder = new TeamGUIHolder("settings", team.getName());
+        Inventory inv = Bukkit.createInventory(holder, 54, title);
+
+        // Fill background with decorative panes
+        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
+        for (int i = 0; i < 9; i++) {
+            inv.setItem(i, marker);
+        }
+        for (int i = 45; i < 54; i++) {
             inv.setItem(i, marker);
         }
 
         // Slot 10: Toggle PvP friendly fire
-        String pvpStatus = team.isFriendlyFireEnabled() ? "&a&lENABLED &7(Damage ON)" : "&c&lDISABLED &7(Damage OFF)";
+        String pvpStatus = team.isFriendlyFireEnabled() ? "&aENABLED &7(Damage ON)" : "&cDISABLED &7(Damage OFF)";
         inv.setItem(10, createGuiItem(Material.IRON_SWORD, 
-            "&#FF3333&lFriendly Fire Toggle", 
+            "&#FF3333Friendly Fire Toggle", 
             "&7Enables or disables PvP among team-members",
             "",
             "&fPvP Status: " + pvpStatus,
@@ -158,9 +214,9 @@ public class TeamGUIManager {
         ));
 
         // Slot 11: Toggle TeamPay (Payment Sharing settings)
-        String payStatus = team.isPayToggle() ? "&a&lENABLED &7(Deposits allowed)" : "&c&lDISABLED &7(Deposits blocked)";
+        String payStatus = team.isPayToggle() ? "&aENABLED &7(Deposits allowed)" : "&cDISABLED &7(Deposits blocked)";
         inv.setItem(11, createGuiItem(Material.SUNFLOWER, 
-            "&#FFCC00&lTeamPay Toggle", 
+            "&#FFCC00TeamPay Toggle", 
             "&7Toggles whether team members can deposit into bank",
             "",
             "&fTeamPay Status: " + payStatus,
@@ -169,9 +225,9 @@ public class TeamGUIManager {
         ));
 
         // Slot 12: Enderchest Access Lock
-        String echestStatus = team.isEchestLocked() ? "&c&lLOCKED &7(Admin/Owner Only)" : "&a&lUNLOCKED &7(All Members)";
+        String echestStatus = team.isEchestLocked() ? "&cLOCKED &7(Admin/Owner Only)" : "&aUNLOCKED &7(All Members)";
         inv.setItem(12, createGuiItem(Material.CHEST, 
-            "&#CC99FF&lEnderchest Access Lock", 
+            "&#CC99FFEnderchest Access Lock", 
             "&7Controls teammate access to shared enderchest",
             "",
             "&fAccess Lock Status: " + echestStatus,
@@ -186,25 +242,25 @@ public class TeamGUIManager {
         int totalTeams = plugin.getTeamManager().getAllTeams().size();
 
         inv.setItem(13, createGuiItem(Material.NETHER_STAR, 
-            "&#00FFCC&lTeam Standing & Score Metrics", 
+            "&#00FFCCTeam Standing & Score Metrics", 
             "&7Active Leaderboard Standing",
             "",
-            "&fTeam Rank Position: &b&l#" + rank + " &7of &f" + totalTeams + " Teams",
-            "&fTotal Team Score: &a&l" + score + " Points",
+            "&fTeam Rank Position: &b#" + rank + " &7of &f" + totalTeams + " Teams",
+            "&fTotal Team Score: &a" + score + " Points",
             "",
             "&e▶ What does this mean? (Hover details)",
             "&7Your TeamScore measures competitive grinding:",
             "&f- Active Members: &7+50 pts each",
             "&f- Team Bank Vault: &7+1 pt per $10k",
             "&f- Combat Grinding: &7Pts from PvP kills",
-            "&f  &7- Earn &e+5 pts &7per Kill",
-            "&f  &7- Lose &c-2 pts &7per Death"
+            "&f  - Earn &e+5 pts &7per Kill",
+            "&f  - Lose &c-2 pts &7per Death"
         ));
 
         // Slot 14: Open Join policy (registration tag)
-        String joinPolicyStatus = team.isOpenJoin() ? "&a&lOPEN JOIN &7(No invite needed)" : "&c&lINVITE/REQUESTS &7(Invite/Apply required)";
+        String joinPolicyStatus = team.isOpenJoin() ? "&aOPEN JOIN &7(No invite needed)" : "&cINVITE/REQUESTS &7(Invite/Apply required)";
         inv.setItem(14, createGuiItem(Material.OAK_DOOR, 
-            "&#33CCFF&lOpen Join Policy", 
+            "&#33CCFFOpen Join Policy", 
             "&7Toggle if outsiders can join without invites",
             "",
             "&fJoin Policy: " + joinPolicyStatus,
@@ -213,9 +269,9 @@ public class TeamGUIManager {
         ));
 
         // Slot 15: Team Chat Toggle
-        String chatPolicyStatus = team.isTeamChatEnabled() ? "&a&lENABLED &7(Teammates can chat)" : "&c&lDISABLED &7(Team chat locked)";
+        String chatPolicyStatus = team.isTeamChatEnabled() ? "&aENABLED &7(Teammates can chat)" : "&cDISABLED &7(Team chat locked)";
         inv.setItem(15, createGuiItem(Material.PAPER, 
-            "&#33CC99&lTeam Chat Toggle", 
+            "&#33CC99Team Chat Toggle", 
             "&7Toggles whether the team chat channel is active",
             "",
             "&fTeam Chat: " + chatPolicyStatus,
@@ -224,9 +280,9 @@ public class TeamGUIManager {
         ));
 
         // Slot 16: Member Invite Toggle
-        String invitePolicyStatus = team.isMemberInviteEnabled() ? "&a&lENABLED &7(Members can invite)" : "&c&lDISABLED &7(Admins/Owner only)";
+        String invitePolicyStatus = team.isMemberInviteEnabled() ? "&aENABLED &7(Members can invite)" : "&cDISABLED &7(Admins/Owner only)";
         inv.setItem(16, createGuiItem(Material.WRITABLE_BOOK, 
-            "&#FF66CC&lMember Invite Toggle", 
+            "&#FF66CCMember Invite Toggle", 
             "&7Toggles if ordinary members can invite others",
             "",
             "&fMember Inviting: " + invitePolicyStatus,
@@ -234,10 +290,10 @@ public class TeamGUIManager {
             "&e▶ Click to TOGGLE invite permissions"
         ));
 
-        // Slot 17: Teammate Login Alert Toggle
-        String alertPolicyStatus = team.isLoginAlertsEnabled() ? "&a&lENABLED &7(Login broadcasts ON)" : "&c&lDISABLED &7(Broadcasts OFF)";
-        inv.setItem(17, createGuiItem(Material.REDSTONE_LAMP, 
-            "&#E0C068&lTeammate Login Alerts", 
+        // Slot 19: Teammate Login Alert Toggle
+        String alertPolicyStatus = team.isLoginAlertsEnabled() ? "&aENABLED &7(Login broadcasts ON)" : "&cDISABLED &7(Broadcasts OFF)";
+        inv.setItem(19, createGuiItem(Material.REDSTONE_LAMP, 
+            "&#E0C068Teammate Login Alerts", 
             "&7Toggles notifications when teammates join/quit",
             "",
             "&fTeammate Logs: " + alertPolicyStatus,
@@ -245,9 +301,51 @@ public class TeamGUIManager {
             "&e▶ Click to TOGGLE login system alerts"
         ));
 
-        // Slot 22: Go back
-        inv.setItem(22, createGuiItem(Material.ARROW, 
-            "&e&l◀ Return to Dashboard", 
+        // Slot 20: Join Requests List (Formerly shield in dashboard)
+        int requestCount = team.getRequests().size();
+        inv.setItem(20, createGuiItem(Material.SHIELD,
+            "&#33CCFFJoin Requests Pool &7(" + requestCount + ")",
+            "&7Status: Pending Applications Hub",
+            "",
+            "&fPending Requests: &e" + requestCount,
+            "",
+            "&a▶ Click to manage pending applications"
+        ));
+
+        // Slot 21: Compass for Homes & Warps list
+        inv.setItem(21, createGuiItem(Material.COMPASS,
+            "&#FF4D4DNavigation Hub",
+            "&7List set coordinates and warp structures.",
+            "",
+            "&fHomes Set: &e" + team.getMultiHomes().size(),
+            "&fWarps Set: &b" + team.getMultiWarps().size(),
+            "",
+            "&a▶ Click to browse Homes & Warps"
+        ));
+
+        // Slot 22: Leave Option
+        inv.setItem(22, createGuiItem(Material.RED_TULIP,
+            "&#FF3333Leave Team Option",
+            "&7Abandon or quit this team.",
+            "",
+            "&7Warning: If you are the owner, leaving",
+            "&7will automatically disband the team!",
+            "",
+            "&c▶ Click to LEAVE the team safely"
+        ));
+
+        // Slot 23: Team Ban / Disband Option
+        inv.setItem(23, createGuiItem(Material.TNT,
+            "&#FF0000Disband & Ban Team",
+            "&7Remove the team permanently.",
+            "&7Can only be initiated by the primary owner.",
+            "",
+            "&c▶ Click to BAN/DISBAND this team"
+        ));
+
+        // Slot 49: Go back arrow
+        inv.setItem(49, createGuiItem(Material.ARROW, 
+            "&e◀ Return to Dashboard", 
             "&7Go back to main team GUI panel"
         ));
 
@@ -258,49 +356,55 @@ public class TeamGUIManager {
      * Creates and opens the Team Members sub-menu (Menu: members)
      */
     public void openMembersMenu(Player player, Team team) {
-        String title = plugin.colorize("&#CC66FF&lMembers &7» &f" + team.getName());
+        String title = plugin.colorize("&#33CCFFMembers Directory &7» &f" + team.getName());
         TeamGUIHolder holder = new TeamGUIHolder("members", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
+        Inventory inv = Bukkit.createInventory(holder, 54, title);
 
         // Fill background with decorative panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < 9; i++) {
+            inv.setItem(i, marker);
+        }
+        for (int i = 45; i < 54; i++) {
             inv.setItem(i, marker);
         }
 
-        // Layout members skulls
-        int index = 0;
-        int[] memberSlots = { 10, 11, 12, 13, 14, 15, 16 };
+        // Slot 4: Info item
+        inv.setItem(4, createGuiItem(Material.BOOK,
+            "&#33CCFFTeam Members List",
+            "&7Roster management control page.",
+            "",
+            "&f💡 &7Members can access echest, homes/warps",
+            "   &7and cooperate inside the team chat.",
+            "",
+            "&f💡 &7Admins and Owners can manage",
+            "   &7roles and kick players directly."
+        ));
 
+        // Slot 49: Return Arrow
+        inv.setItem(49, createGuiItem(Material.ARROW,
+            "&e◀ Return to Dashboard",
+            "&7Go back to main team GUI panel"
+        ));
+
+        // Let's populate the active members in slots 9-44
+        int slotIdx = 9;
         for (UUID memberId : team.getMembers()) {
-            if (index >= memberSlots.length) {
-                break;
-            }
+            if (slotIdx > 44) break;
+
             org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(memberId);
             String name = offlinePlayer.getName() != null ? offlinePlayer.getName() : "Unknown Player";
             String role = team.getRole(memberId);
+            String status = offlinePlayer.isOnline() ? "&2● Online" : "&7○ Offline";
 
-            // Query details for lore
-            String status = offlinePlayer.isOnline() ? "&a● Online" : "&7○ Offline";
-
-            ItemStack skull = createMemberSkullItem(offlinePlayer, "&#CC66FF&l" + name,
+            inv.setItem(slotIdx, createMemberSkullItem(offlinePlayer, "&#33CCFF" + name,
                 "&7Status: " + status,
-                "&fRole: &b&l" + role,
+                "&fRole: &b" + role,
                 "",
-                "&f- UUID: &7" + memberId.toString().substring(0, 8),
-                "",
-                "&e▶ Click to view detailed profile & actions"
-            );
-
-            inv.setItem(memberSlots[index], skull);
-            index++;
+                "&7Click to manage actions"
+            ));
+            slotIdx++;
         }
-
-        // Slot 22: Return to Dashboard
-        inv.setItem(22, createGuiItem(Material.ARROW, 
-            "&e&l◀ Return to Dashboard", 
-            "&7Go back to main team GUI panel"
-        ));
 
         player.openInventory(inv);
     }
@@ -510,7 +614,7 @@ public class TeamGUIManager {
      * Opens a sub-menu showing detailed statistics and actions for a specific team member.
      */
     public void openMemberDetailMenu(Player viewer, Team team, org.bukkit.OfflinePlayer target) {
-        String title = plugin.colorize("&#CC66FF&lMember Detail &7» &f" + target.getName());
+        String title = plugin.colorize("&#33CCFFMember Detail &7» &f" + target.getName());
         TeamGUIHolder holder = new TeamGUIHolder("member_detail:" + target.getUniqueId().toString(), team.getName());
         Inventory inv = Bukkit.createInventory(holder, 27, title);
 
@@ -525,10 +629,10 @@ public class TeamGUIManager {
         String joinDate = firstPlayed > 0 ? new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(firstPlayed)) : "Never";
         double totalDeposited = team.getMemberDeposits(target.getUniqueId());
 
-        inv.setItem(13, createMemberSkullItem(target, "&#CC66FF&l" + target.getName(),
+        inv.setItem(13, createMemberSkullItem(target, "&#33CCFF" + target.getName(),
             "&7Status details for this member",
             "",
-            "&f⚡ Role: &#33CCFF&l" + team.getRole(target.getUniqueId()),
+            "&f⚡ Role: &#FFCC00" + team.getRole(target.getUniqueId()),
             "&f⚡ Server Joined: &e" + joinDate,
             "&f⚡ Total Donated/Deposited: &a$" + String.format("%,.2f", totalDeposited),
             "",
@@ -541,50 +645,55 @@ public class TeamGUIManager {
                 && !target.getUniqueId().equals(team.getOwner());
 
         if (canManage) {
-            String role = team.getRole(target.getUniqueId());
-            // Slot 11: Promote button if role is MEMBER
-            if ("MEMBER".equalsIgnoreCase(role)) {
-                inv.setItem(11, createGuiItem(Material.GOLD_INGOT,
-                    "&#00FF99&lPromote to Admin",
-                    "&7Grant this member administrator rights,",
-                    "&7allowing them to manage settings,",
-                    "&7warps/homes and invites.",
-                    "",
-                    "&a▶ Click to PROMOTE to ADMIN"
-                ));
-            } else {
-                inv.setItem(11, createGuiItem(Material.BARRIER,
-                    "&c&lCannot Promote",
-                    "&7This player is already an Admin or Owner!"
-                ));
-            }
+            // Slot 10: Allocate ADMIN
+            inv.setItem(10, createGuiItem(Material.GOLD_BLOCK,
+                "&#33CCFFSet ADMIN Role",
+                "&7Grants full administrator privileges.",
+                "&fCan manage warps, structures, settings,",
+                "&fpermissions, and lower ranks.",
+                "",
+                "&a▶ Click to allocate ADMIN rank"
+            ));
 
-            // Slot 15: Demote/Kick button
-            if ("ADMIN".equalsIgnoreCase(role) || "MODERATOR".equalsIgnoreCase(role)) {
-                inv.setItem(15, createGuiItem(Material.REDSTONE,
-                    "&#FF3366&lDemote to Member",
-                    "&7Strip administrator permissions from",
-                    "&7this user, returning them to Member.",
-                    "",
-                    "&c▶ Click to DEMOTE to MEMBER"
-                ));
-            } else {
-                inv.setItem(15, createGuiItem(Material.LAVA_BUCKET,
-                    "&#FF3333&lKick Member",
-                    "&7Remove this member from the team.",
-                    "&7They will lose access to team resources.",
-                    "",
-                    "&c▶ Click to KICK from Team"
-                ));
-            }
+            // Slot 11: Allocate MODERATOR
+            inv.setItem(11, createGuiItem(Material.IRON_BLOCK,
+                "&#FFCC00Set MODERATOR Role",
+                "&7Grants group moderator rights.",
+                "&fCan initiate invites, accept pending",
+                "&fjoining applications, and toggle chat.",
+                "",
+                "&a▶ Click to allocate MODERATOR rank"
+            ));
+
+            // Slot 15: Allocate MEMBER
+            inv.setItem(15, createGuiItem(Material.COAL_BLOCK,
+                "&#E0E0E0Set MEMBER Role",
+                "&7Resets status back to basic Member.",
+                "&fRemoves all administrative command",
+                "&frights and privileges.",
+                "",
+                "&a▶ Click to allocate MEMBER rank"
+            ));
+
+            // Slot 16: Kick option
+            inv.setItem(16, createGuiItem(Material.LAVA_BUCKET,
+                "&#FF3333Kick from Team",
+                "&7Terminates roster membership.",
+                "&fRemoves player completely from the",
+                "&fteam roster.",
+                "",
+                "&c▶ Click to KICK member"
+            ));
         } else {
-            inv.setItem(11, createGuiItem(Material.BARRIER, "&7Information Only", "&fYou do not have administrative permissions", "&fto promote/demote this member."));
-            inv.setItem(15, createGuiItem(Material.BARRIER, "&7Information Only", "&fYou do not have administrative permissions", "&fto kick this member."));
+            inv.setItem(10, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
+            inv.setItem(11, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
+            inv.setItem(15, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
+            inv.setItem(16, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
         }
 
         // Slot 22: Go back
         inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Members Roster",
+            "&e◀ Return to Members Roster",
             "&7Go back to roster menu"
         ));
 
@@ -595,29 +704,32 @@ public class TeamGUIManager {
      * Creates and opens the Team Leaderboard GUI (Menu: leaderboard)
      */
     public void openLeaderboardMenu(Player player, Team viewerTeam) {
-        String title = plugin.colorize("&#00FFCC&lL E A D E R B O A R D &7- &#FFCC00&lTop Teams");
+        String title = plugin.colorize("&#33CCFFLeaderboard &7- &#A9C9FFTop Teams");
         TeamGUIHolder holder = new TeamGUIHolder("leaderboard", viewerTeam.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
+        Inventory inv = Bukkit.createInventory(holder, 54, title);
 
         // Fill background with decorative panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < 9; i++) {
+            inv.setItem(i, marker);
+        }
+        for (int i = 45; i < 54; i++) {
             inv.setItem(i, marker);
         }
 
-        // Slot  4: Info marker of current viewer's team
+        // Slot 4: Info marker of current viewer's team
         viewerTeam.recalculateScore(plugin);
         int vRank = viewerTeam.getRankPosition(plugin);
         int vScore = viewerTeam.getCachedScore();
         int totalTeamsCount = plugin.getTeamManager().getAllTeams().size();
 
         inv.setItem(4, createGuiItem(Material.NETHER_STAR,
-            "&#00FFCC&lYour Team Standing",
+            "&#33CCFFYour Team Standing",
             "&7Core competitive evaluation",
             "",
             "&fTeam Profile: &e" + viewerTeam.getName(),
-            "&fLeaderboard Rank: &#FFD700&l#" + vRank + " &7of &f" + totalTeamsCount,
-            "&fTeam Score: &a&l" + vScore + " Points",
+            "&fLeaderboard Rank: &#FFCC00#" + vRank + " &7of &f" + totalTeamsCount,
+            "&fTeam Score: &a" + vScore + " Points",
             "",
             "&7Scores update dynamically based on members,",
             "&7bank content, and grinding activities."
@@ -630,49 +742,35 @@ public class TeamGUIManager {
         }
         sorted.sort((t1, t2) -> Integer.compare(t2.getCachedScore(), t1.getCachedScore()));
 
-        int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-        int limit = Math.min(7, sorted.size());
-
+        // Let's populate the active teams in slots 9-44
+        int limit = Math.min(36, sorted.size());
         for (int i = 0; i < limit; i++) {
             Team currentTeam = sorted.get(i);
-            String rankPrefix = "";
-            Material blockMaterial = Material.STONE_BUTTON; // default
+            int slotIdx = 9 + i;
 
-            switch (i) {
-                case 0:
-                    rankPrefix = "&#FFD700&l【1st】";
-                    blockMaterial = Material.GOLD_BLOCK;
-                    break;
-                case 1:
-                    rankPrefix = "&#C0C0C0&l【2nd】";
-                    blockMaterial = Material.IRON_BLOCK;
-                    break;
-                case 2:
-                    rankPrefix = "&#CD7F32&l【3rd】";
-                    blockMaterial = Material.COPPER_BLOCK;
-                    break;
-                default:
-                    rankPrefix = "&7&l【" + (i + 1) + "th】";
-                    blockMaterial = Material.COAL_BLOCK;
-                    break;
-            }
-
+            org.bukkit.OfflinePlayer owner = Bukkit.getOfflinePlayer(currentTeam.getOwner());
+            String ownerName = owner.getName() != null ? owner.getName() : "Unknown Owner";
             double kdr = currentTeam.getDeaths() > 0 ? (double) currentTeam.getKills() / currentTeam.getDeaths() : currentTeam.getKills();
 
-            inv.setItem(slots[i], createGuiItem(blockMaterial,
-                rankPrefix + " &#00FFCC&l" + currentTeam.getName(),
+            String rankColor = "&f";
+            if (i == 0) rankColor = "&#FFD700";
+            else if (i == 1) rankColor = "&#C0C0C0";
+            else if (i == 2) rankColor = "&#CD7F32";
+
+            inv.setItem(slotIdx, createMemberSkullItem(owner, rankColor + "#" + (i + 1) + ". &#33CCFF" + currentTeam.getName(),
                 "&7Competitive Rank Standing",
                 "",
-                "&f⚡ Score: &#FFCC00&l" + currentTeam.getCachedScore() + " Points",
-                "&f⚡ Members: &e" + currentTeam.getMembers().size() + "/8",
+                "&f⚡ Score: &#FFCC00" + currentTeam.getCachedScore() + " Points",
+                "&f⚡ Owner: &e" + ownerName,
+                "&f⚡ Members: &7" + currentTeam.getMembers().size() + "/8",
                 "&f⚡ Bank Balance: &a$" + String.format("%,.2f", currentTeam.getBankBalance()),
                 "&f⚡ Combat Stats: &c" + currentTeam.getKills() + " Kills &7| &c" + currentTeam.getDeaths() + " Deaths (KDR: " + String.format("%.2f", kdr) + ")"
             ));
         }
 
-        // Slot 22: Go back Arrow
-        inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Dashboard",
+        // Slot 49: Go back Arrow
+        inv.setItem(49, createGuiItem(Material.ARROW,
+            "&e◀ Return to Dashboard",
             "&7Go back to main team GUI panel"
         ));
 
