@@ -29,7 +29,7 @@ public class TeamGUIManager {
      * Creates and opens the Main Team Dashboard (Menu: main)
      */
     public void openMainMenu(Player player, Team team) {
-        String title = plugin.colorize("&#33CCFF&lTeam Dashboard &7» &f" + team.getName());
+        String title = plugin.colorize("&#33CCFFTeam Dashboard &7» &f" + team.getName());
         TeamGUIHolder holder = new TeamGUIHolder("main", team.getName());
         Inventory inv = Bukkit.createInventory(holder, 27, title);
 
@@ -41,7 +41,7 @@ public class TeamGUIManager {
 
         // Slot 10: Team Bank
         inv.setItem(10, createGuiItem(Material.GOLD_INGOT, 
-            "&#FFCC00&lTeam Bank Balance", 
+            "&#FFCC00Team Bank Balance", 
             "&7Status: Economy Management",
             "",
             "&fBalance: &a$" + String.format("%,.2f", team.getBankBalance()),
@@ -51,7 +51,7 @@ public class TeamGUIManager {
 
         // Slot 11: Team Members
         inv.setItem(11, createMemberSkullItem(player, 
-            "&#CC66FF&lTeam Members &7(" + team.getMembers().size() + ")", 
+            "&#CC66FFTeam Members &7(" + team.getMembers().size() + ")", 
             "&7Status: Roster Management",
             "",
             "&fTotal Members: &e" + team.getMembers().size() + "/8",
@@ -70,24 +70,20 @@ public class TeamGUIManager {
             "&a▶ Click to manage team alliances"
         ));
 
-        // Slot 13: Team Homes & Warps. Dynamically shown ONLY if at least 1 home or 1 warp is set!
-        if (!team.getMultiHomes().isEmpty() || !team.getMultiWarps().isEmpty()) {
-            inv.setItem(13, createGuiItem(Material.COMPASS, 
-                "&#FF3366&lHOMES & &#FF9933&lWARPS", 
-                "&7Status: Navigation Hub",
-                "",
-                "&fTotal Homes Set: &e" + team.getMultiHomes().size(),
-                "&fTotal Warps Set: &b" + team.getMultiWarps().size(),
-                "",
-                "&a▶ Click to open Homes & Warps Menu"
-            ));
-        } else {
-            inv.setItem(13, marker);
-        }
+        // Slot 13: Team Homes & Warps. ALWAYS SHOWN!
+        inv.setItem(13, createGuiItem(Material.COMPASS, 
+            "&#FF3336Homes & Warp locations", 
+            "&7Status: Navigation Hub",
+            "",
+            "&fTotal Homes Set: &e" + team.getMultiHomes().size(),
+            "&fTotal Warps Set: &b" + team.getMultiWarps().size(),
+            "",
+            "&a▶ Click to open Homes & Warps Menu"
+        ));
 
         // Slot 14: Team Enderchest
         inv.setItem(14, createGuiItem(Material.ENDER_CHEST, 
-            "&#CC99FF&lTeam Shared Enderchest", 
+            "&#CC99FFTeam Shared Enderchest", 
             "&7Status: Public vault of valuables",
             "",
             "&fSlots: &727 Slots",
@@ -98,7 +94,7 @@ public class TeamGUIManager {
         // Slot 15: Team Statistics & Leaderboards
         double kdr = team.getDeaths() > 0 ? (double) team.getKills() / team.getDeaths() : team.getKills();
         inv.setItem(15, createGuiItem(Material.DIAMOND_SWORD, 
-            "&#FF3333&lTeam Statistics & Leaderboards", 
+            "&#FF3333Team Statistics & Leaderboards", 
             "&7Status: Core Competitive Metrics",
             "",
             "&fKills: &a" + team.getKills() + " &7| &fDeaths: &c" + team.getDeaths(),
@@ -110,23 +106,12 @@ public class TeamGUIManager {
 
         // Slot 16: Settings Menu Toggle
         inv.setItem(16, createGuiItem(Material.COMPARATOR, 
-            "&#FF6600&lTeam Settings Panel", 
+            "&#FF6600Team Settings Panel", 
             "&7Status: Configurations",
             "",
             "&fFriendly Fire: " + (team.isFriendlyFireEnabled() ? "&aON" : "&cOFF"),
             "",
             "&a▶ Click to manage rules and toggles"
-        ));
-
-        // Slot 18: Leave Team Button (Accessible to all members)
-        inv.setItem(18, createGuiItem(Material.RED_TULIP, 
-            "&#FF3333&lLeave Team Option", 
-            "&7Abandon or quit this team.",
-            "",
-            "&7Warning: If you are the owner, leaving",
-            "&7will automatically disband the team!",
-            "",
-            "&c▶ Click to LEAVE the team safely"
         ));
 
         player.openInventory(inv);
@@ -191,14 +176,11 @@ public class TeamGUIManager {
     public void openSettingsMenu(Player player, Team team) {
         String title = plugin.colorize("&#FF9933Team Settings Panel");
         TeamGUIHolder holder = new TeamGUIHolder("settings", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
+        Inventory inv = Bukkit.createInventory(holder, 27, title);
 
         // Fill background with decorative panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 9; i++) {
-            inv.setItem(i, marker);
-        }
-        for (int i = 45; i < 54; i++) {
+        for (int i = 0; i < 27; i++) {
             inv.setItem(i, marker);
         }
 
@@ -250,8 +232,8 @@ public class TeamGUIManager {
             "",
             "&e▶ What does this mean? (Hover details)",
             "&7Your TeamScore measures competitive grinding:",
-            "&f- Active Members: &7+50 pts each",
-            "&f- Team Bank Vault: &7+1 pt per $10k",
+            "&f- Active Members: &7+10 pts each",
+            "&f- Team Bank Vault: &7+2 pts per $5,000",
             "&f- Combat Grinding: &7Pts from PvP kills",
             "&f  - Earn &e+5 pts &7per Kill",
             "&f  - Lose &c-2 pts &7per Death"
@@ -312,19 +294,8 @@ public class TeamGUIManager {
             "&a▶ Click to manage pending applications"
         ));
 
-        // Slot 21: Compass for Homes & Warps list
-        inv.setItem(21, createGuiItem(Material.COMPASS,
-            "&#FF4D4DNavigation Hub",
-            "&7List set coordinates and warp structures.",
-            "",
-            "&fHomes Set: &e" + team.getMultiHomes().size(),
-            "&fWarps Set: &b" + team.getMultiWarps().size(),
-            "",
-            "&a▶ Click to browse Homes & Warps"
-        ));
-
-        // Slot 22: Leave Option
-        inv.setItem(22, createGuiItem(Material.RED_TULIP,
+        // Slot 21: Leave Option
+        inv.setItem(21, createGuiItem(Material.RED_TULIP,
             "&#FF3333Leave Team Option",
             "&7Abandon or quit this team.",
             "",
@@ -334,8 +305,8 @@ public class TeamGUIManager {
             "&c▶ Click to LEAVE the team safely"
         ));
 
-        // Slot 23: Team Ban / Disband Option
-        inv.setItem(23, createGuiItem(Material.TNT,
+        // Slot 22: Team Ban / Disband Option
+        inv.setItem(22, createGuiItem(Material.TNT,
             "&#FF0000Disband & Ban Team",
             "&7Remove the team permanently.",
             "&7Can only be initiated by the primary owner.",
@@ -343,8 +314,8 @@ public class TeamGUIManager {
             "&c▶ Click to BAN/DISBAND this team"
         ));
 
-        // Slot 49: Go back arrow
-        inv.setItem(49, createGuiItem(Material.ARROW, 
+        // Slot 26: Go back arrow
+        inv.setItem(26, createGuiItem(Material.ARROW, 
             "&e◀ Return to Dashboard", 
             "&7Go back to main team GUI panel"
         ));
@@ -483,7 +454,7 @@ public class TeamGUIManager {
      * Creates and opens the Homes & Warps sub-menu (Menu: homes_warps)
      */
     public void openHomesWarpsMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FF3366&lHomes & &#FF9933&lWarps");
+        String title = plugin.colorize("&#FF3366Homes & &#FF9933Warps");
         TeamGUIHolder holder = new TeamGUIHolder("homes_warps", team.getName());
         Inventory inv = Bukkit.createInventory(holder, 27, title);
 
@@ -493,35 +464,31 @@ public class TeamGUIManager {
             inv.setItem(i, marker);
         }
 
-        // Homes Button (Slot 11) - Only shown if at least one home exists
-        if (!team.getMultiHomes().isEmpty()) {
-            int maxHomes = plugin.getConfig().getInt("cooldowns-and-teleportation.max-homes-per-team", 3);
-            inv.setItem(11, createGuiItem(Material.RED_BED,
-                "&#FF3366&lTeam Homes list",
-                "&7Status: Active Registered Homes",
-                "",
-                "&fTotal Set: &e" + team.getMultiHomes().size() + " &7/ &e" + maxHomes,
-                "",
-                "&a▶ Click to open Homes list"
-            ));
-        }
+        // Homes Button (Slot 11) - ALWAYS shown!
+        int maxHomes = plugin.getConfig().getInt("cooldowns-and-teleportation.max-homes-per-team", 3);
+        inv.setItem(11, createGuiItem(Material.RED_BED,
+            "&#FF3366Team Homes List",
+            "&7Status: Active Registered Homes",
+            "",
+            "&fTotal Set: &e" + team.getMultiHomes().size() + " &7/ &e" + maxHomes,
+            "",
+            "&a▶ Click to open Homes list"
+        ));
 
-        // Warps Button (Slot 15) - Only shown if at least one warp exists
-        if (!team.getMultiWarps().isEmpty()) {
-            int maxWarps = plugin.getConfig().getInt("cooldowns-and-teleportation.max-warps-per-team", 5);
-            inv.setItem(15, createGuiItem(Material.ENDER_PEARL,
-                "&#FF9933&lTeam Warps list",
-                "&7Status: Active Registered Warps",
-                "",
-                "&fTotal Set: &b" + team.getMultiWarps().size() + " &7/ &b" + maxWarps,
-                "",
-                "&a▶ Click to open Warps list"
-            ));
-        }
+        // Warps Button (Slot 15) - ALWAYS shown!
+        int maxWarps = plugin.getConfig().getInt("cooldowns-and-teleportation.max-warps-per-team", 5);
+        inv.setItem(15, createGuiItem(Material.ENDER_PEARL,
+            "&#FF9933Team Warps List",
+            "&7Status: Active Registered Warps",
+            "",
+            "&fTotal Set: &b" + team.getMultiWarps().size() + " &7/ &b" + maxWarps,
+            "",
+            "&a▶ Click to open Warps list"
+        ));
 
         // Slot 22: Return to Dashboard
         inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Dashboard",
+            "&e◀ Return to Dashboard",
             "&7Go back to main team GUI panel"
         ));
 
@@ -532,7 +499,7 @@ public class TeamGUIManager {
      * Creates and opens the Team Homes listing menu (Menu: homes_list)
      */
     public void openHomesListMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FF3366&lTeam Homes");
+        String title = plugin.colorize("&#FF3366Team Homes");
         TeamGUIHolder holder = new TeamGUIHolder("homes_list", team.getName());
         Inventory inv = Bukkit.createInventory(holder, 27, title);
 
@@ -542,27 +509,26 @@ public class TeamGUIManager {
             inv.setItem(i, marker);
         }
 
-        int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-        int idx = 0;
+        int startSlot = 9;
         for (java.util.Map.Entry<String, Team.TeamHome> entry : team.getMultiHomes().entrySet()) {
-            if (idx >= slots.length) break;
+            if (startSlot > 17) break;
             Team.TeamHome home = entry.getValue();
             String name = entry.getKey();
 
-            inv.setItem(slots[idx], createGuiItem(Material.RED_BED,
-                "&#FF3366&lHome: " + name,
+            inv.setItem(startSlot, createGuiItem(Material.RED_BED,
+                "&#FF3366Home: " + name,
                 "&7World: &e" + home.getWorld(),
                 "&7Coords: &fX: " + (int)home.getX() + " Y: " + (int)home.getY() + " Z: " + (int)home.getZ(),
                 "",
                 "&a▶ Left-Click &f(TELEPORT)",
                 "&c◀ Right-Click &f(DELETE - Admin+)"
             ));
-            idx++;
+            startSlot++;
         }
 
         // Slot 22: Return to selector
         inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Homes & Warps Menu",
+            "&e◀ Return to Homes & Warps Menu",
             "&7Go back to navigation options"
         ));
 
@@ -573,7 +539,7 @@ public class TeamGUIManager {
      * Creates and opens the Team Warps listing menu (Menu: warps_list)
      */
     public void openWarpsListMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FF9933&lTeam Warps");
+        String title = plugin.colorize("&#FF9933Team Warps");
         TeamGUIHolder holder = new TeamGUIHolder("warps_list", team.getName());
         Inventory inv = Bukkit.createInventory(holder, 27, title);
 
@@ -583,27 +549,26 @@ public class TeamGUIManager {
             inv.setItem(i, marker);
         }
 
-        int[] slots = { 10, 11, 12, 13, 14, 15, 16 };
-        int idx = 0;
+        int startSlot = 9;
         for (java.util.Map.Entry<String, Team.TeamHome> entry : team.getMultiWarps().entrySet()) {
-            if (idx >= slots.length) break;
+            if (startSlot > 17) break;
             Team.TeamHome warp = entry.getValue();
             String name = entry.getKey();
 
-            inv.setItem(slots[idx], createGuiItem(Material.ENDER_PEARL,
-                "&#FF9933&lWarp: " + name,
+            inv.setItem(startSlot, createGuiItem(Material.ENDER_PEARL,
+                "&#FF9933Warp: " + name,
                 "&7World: &e" + warp.getWorld(),
                 "&7Coords: &fX: " + (int)warp.getX() + " Y: " + (int)warp.getY() + " Z: " + (int)warp.getZ(),
                 "",
                 "&a▶ Left-Click &f(TELEPORT)",
                 "&c◀ Right-Click &f(DELETE - Admin+)"
             ));
-            idx++;
+            startSlot++;
         }
 
         // Slot 22: Return to selector
         inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e&l◀ Return to Homes & Warps Menu",
+            "&e◀ Return to Homes & Warps Menu",
             "&7Go back to navigation options"
         ));
 
