@@ -29,6 +29,7 @@ public final class OurTeam extends JavaPlugin {
     private File chestPermissionsFile;
     private net.milkbowl.vault.economy.Economy econ;
     private final java.util.Map<java.util.UUID, String> activeBankAction = new java.util.HashMap<>();
+    private final java.util.Map<java.util.UUID, String> activeGeneralAction = new java.util.HashMap<>();
     private final java.util.Set<java.util.UUID> chatSpyPlayers = new java.util.HashSet<>();
     private final java.util.Map<java.util.UUID, java.util.Map<java.util.UUID, Long>> lastKillTimestamps = new java.util.HashMap<>();
 
@@ -229,6 +230,10 @@ public final class OurTeam extends JavaPlugin {
 
     public java.util.Map<java.util.UUID, String> getActiveBankAction() {
         return activeBankAction;
+    }
+
+    public java.util.Map<java.util.UUID, String> getActiveGeneralAction() {
+        return activeGeneralAction;
     }
 
     @Override
