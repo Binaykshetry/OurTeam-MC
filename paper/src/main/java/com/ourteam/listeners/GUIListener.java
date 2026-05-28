@@ -97,6 +97,52 @@ public class GUIListener implements Listener {
             return;
         }
 
+        // 1b. Check if clicking in No Team / Creation Hub GUI
+        if ("noteam".equalsIgnoreCase(menu)) {
+            try {
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+            } catch (Exception e) {}
+
+            int slot = event.getSlot();
+            if (slot == 11) {
+                // Create a New Team button
+                player.closeInventory();
+                plugin.getActiveGeneralAction().put(player.getUniqueId(), "CREATE_TEAM");
+                player.sendMessage(plugin.colorize("&8&m========================================"));
+                player.sendMessage(plugin.colorize("&6&l          » TEAM CREATION «"));
+                player.sendMessage(plugin.colorize("&fPlease enter your desired **Team Name** in chat."));
+                player.sendMessage(plugin.colorize("&7Limit: 3 to 12 letters. Type &ccancel &7to abort."));
+                player.sendMessage(plugin.colorize("&8&m========================================"));
+            } else if (slot == 13) {
+                // View Active Teams Directory (Browse/Apply)
+                player.closeInventory();
+                plugin.getGuiManager().openTeamsListMenu(player);
+            } else if (slot == 15) {
+                // View Invitations (prints active invites via chat)
+                player.closeInventory();
+                
+                java.util.List<Team> invitedTeams = new java.util.ArrayList<>();
+                for (Team t : plugin.getTeamManager().getTeams().values()) {
+                    if (t.hasInvite(player.getUniqueId())) {
+                        invitedTeams.add(t);
+                    }
+                }
+                
+                player.sendMessage(plugin.colorize("&8&m========================================"));
+                player.sendMessage(plugin.colorize("&d&l          » YOUR INVITATIONS «"));
+                if (invitedTeams.isEmpty()) {
+                    player.sendMessage(plugin.colorize("&7You do not have any pending team invitations."));
+                } else {
+                    player.sendMessage(plugin.colorize("&7You have been invited to join the following teams:"));
+                    for (Team t : invitedTeams) {
+                        player.sendMessage(plugin.colorize("&a- &b" + t.getName() + " &7- Click to accept: &e/team accept " + t.getName()));
+                    }
+                }
+                player.sendMessage(plugin.colorize("&8&m========================================"));
+            }
+            return;
+        }
+
         Team team = plugin.getTeamManager().getTeamByName(holder.getTeamName());
 
         if (team == null) {
