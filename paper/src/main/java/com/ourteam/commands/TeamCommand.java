@@ -44,7 +44,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
             if (team == null) {
-                player.sendMessage(plugin.colorize("&cYou must be in a team to open the menu. Type &e/team create <name> &cto form one first!"));
+                sendNoTeamMenu(player);
             } else {
                 plugin.getGuiManager().openMainMenu(player, team);
                 player.sendMessage(plugin.colorize("&a[OurTeam] Opening Team GUI menu..."));
@@ -624,7 +624,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
                 return i;
             }
         }
-        return plugin.getConfig().getInt("cooldowns-and-teleportation.max-homes-per-team", 3);
+        return plugin.getConfig().getInt("cooldowns-and-teleportation.max-homes-per-team", 1);
     }
 
     private int getMaxWarps(Player player) {
@@ -636,7 +636,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
                 return i;
             }
         }
-        return plugin.getConfig().getInt("cooldowns-and-teleportation.max-warps-per-team", 5);
+        return plugin.getConfig().getInt("cooldowns-and-teleportation.max-warps-per-team", 1);
     }
 
     private void handleChatToggle(Player player) {
@@ -1250,16 +1250,77 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void sendNoTeamMenu(Player player) {
+        player.sendMessage(plugin.colorize("&8&m========================================"));
+        player.sendMessage(plugin.colorize("&6&l          » NO TEAM DETECTED «"));
+        player.sendMessage(plugin.colorize("&7You do not belong to any team currently."));
+        player.sendMessage(plugin.colorize("&7Please select one of the options below:"));
+        player.sendMessage("");
+
+        // Option 1: Create Team
+        try {
+            net.md_5.bungee.api.chat.TextComponent title1 = new net.md_5.bungee.api.chat.TextComponent(plugin.colorize("&e&l[Option 1] &6&lCreate a New Team"));
+            net.md_5.bungee.api.chat.TextComponent subtitle1 = new net.md_5.bungee.api.chat.TextComponent(plugin.colorize("\n&7Form an organization. Click to type: "));
+            net.md_5.bungee.api.chat.TextComponent cmd1 = new net.md_5.bungee.api.chat.TextComponent(plugin.colorize("&a&n/team create <name>"));
+            cmd1.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.SUGGEST_COMMAND, "/team create "));
+            cmd1.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT, 
+                new net.md_5.bungee.api.chat.BaseComponent[]{ new net.md_5.bungee.api.chat.TextComponent(plugin.colorize("&eClick to suggest the creation command!")) }));
+            
+            net.md_5.bungee.api.chat.TextComponent option1 = new net.md_5.bungee.api.chat.TextComponent();
+            option1.addExtra(title1);
+            option1.addExtra(subtitle1);
+            option1.addExtra(cmd1);
+            player.spigot().sendMessage(option1);
+        } catch (Throwable t) {
+            player.sendMessage(plugin.colorize("&e&l[Option 1] &6&lCreate a New Team"));
+            player.sendMessage(plugin.colorize("&7Use command: &a/team create <name>"));
+        }
+
+        player.sendMessage("");
+        player.sendMessage(plugin.colorize("&e&l[Option 2] &6&lJoin or Request an Existing Team"));
+        
+        java.util.Collection<Team> allTeams = plugin.getTeamManager().getAllTeams();
+        if (allTeams.isEmpty()) {
+            player.sendMessage(plugin.colorize("&7There are currently no existing teams on the server. Be the first to create one!"));
+        } else {
+            player.sendMessage(plugin.colorize("&7Click on a team's request button to send a join request:"));
+            for (Team t : allTeams) {
+                try {
+                    net.md_5.bungee.api.chat.TextComponent teamLine = new net.md_5.bungee.api.chat.TextComponent(plugin.colorize("&8 - &b" + t.getName() + " &7(Score: &e" + t.getCachedScore() + " pts&7) "));
+                    net.md_5.bungee.api.chat.TextComponent reqButton = new net.md_5.bungee.api.chat.TextComponent(plugin.colorize("&a&l[Send Request]"));
+                    reqButton.setClickEvent(new net.md_5.bungee.api.chat.ClickEvent(net.md_5.bungee.api.chat.ClickEvent.Action.RUN_COMMAND, "/team request " + t.getName()));
+                    reqButton.setHoverEvent(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT, 
+                        new net.md_5.bungee.api.chat.BaseComponent[]{ new net.md_5.bungee.api.chat.TextComponent(plugin.colorize("&bClick to send a join request to team " + t.getName() + "!")) }));
+                    
+                    teamLine.addExtra(reqButton);
+                    player.spigot().sendMessage(teamLine);
+                } catch (Throwable ex) {
+                    player.sendMessage(plugin.colorize("&8 - &b" + t.getName() + " &7- Request Join command: &a/team request " + t.getName()));
+                }
+            }
+        }
+        player.sendMessage(plugin.colorize("&8&m========================================"));
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            List<String> list = new ArrayList<>();
-            list.add("allthecommandseen");
-            list.add("top");
+            List<String> subCommands = java.util.Arrays.asList(
+                "create", "invite", "join", "accept", "request", "acceptrequest", "leave", "kick", "disband", "promote", "demote", "msg", "chat", "pvp", "sethome", "home", "setwarp", "warp", "delhome", "delwarp", "info", "bank", "list", "paytoggle", "gui", "settings", "top", "allthecommandseen"
+            );
             List<String> suggestions = new ArrayList<>();
-            for (String s : list) {
-                if (s.toLowerCase().startsWith(args[0].toLowerCase())) {
-                    suggestions.add(s);
+            for (String sub : subCommands) {
+                if (sub.toLowerCase().startsWith(args[0].toLowerCase())) {
+                    suggestions.add(sub);
+                }
+            }
+            return suggestions;
+        } else if (args.length == 2 && (args[0].equalsIgnoreCase("join") || args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("request") || args[0].equalsIgnoreCase("disband") || args[0].equalsIgnoreCase("info") || args[0].equalsIgnoreCase("bank"))) {
+            List<String> suggestions = new ArrayList<>();
+            String query = args[1].toLowerCase();
+            for (Team t : plugin.getTeamManager().getAllTeams()) {
+                if (t.getName().toLowerCase().startsWith(query)) {
+                    suggestions.add(t.getName());
                 }
             }
             return suggestions;
@@ -1271,6 +1332,15 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
             for (String sub : subCommands) {
                 if (sub.toLowerCase().startsWith(args[1].toLowerCase())) {
                     suggestions.add(sub);
+                }
+            }
+            return suggestions;
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("allthecommandseen") && (args[1].equalsIgnoreCase("join") || args[1].equalsIgnoreCase("accept") || args[1].equalsIgnoreCase("request") || args[1].equalsIgnoreCase("disband") || args[1].equalsIgnoreCase("info") || args[1].equalsIgnoreCase("bank"))) {
+            List<String> suggestions = new ArrayList<>();
+            String query = args[2].toLowerCase();
+            for (Team t : plugin.getTeamManager().getAllTeams()) {
+                if (t.getName().toLowerCase().startsWith(query)) {
+                    suggestions.add(t.getName());
                 }
             }
             return suggestions;

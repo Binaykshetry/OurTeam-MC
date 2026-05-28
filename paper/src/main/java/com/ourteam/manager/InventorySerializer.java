@@ -1,13 +1,12 @@
 package com.ourteam.manager;
 
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.io.BukkitObjectInputStream;
-import org.bukkit.util.io.BukkitObjectOutputStream;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.logging.Level;
 
@@ -28,19 +27,16 @@ public final class InventorySerializer {
             return "";
         }
         try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
-            
-            // Write the size of the inventory
-            dataOutput.writeInt(inventory.getSize());
-            
-            // Write each item stack
+            YamlConfiguration config = new YamlConfiguration();
+            config.set("size", inventory.getSize());
             for (int i = 0; i < inventory.getSize(); i++) {
-                dataOutput.writeObject(inventory.getItem(i));
+                ItemStack item = inventory.getItem(i);
+                if (item != null) {
+                    config.set("items." + i, item);
+                }
             }
-            
-            dataOutput.close();
-            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+            String yamlString = config.saveToString();
+            return Base64.getEncoder().encodeToString(yamlString.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             Bukkit.getLogger().log(Level.SEVERE, "Could not serialize team enderchest inventory!", e);
             return "";
@@ -55,18 +51,24 @@ public final class InventorySerializer {
             return Bukkit.createInventory(null, 27, title);
         }
         try {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(data));
-            BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
-            
-            int size = dataInput.readInt();
+            byte[] decodedBytes = Base64.getDecoder().decode(data);
+            String yamlString = new String(decodedBytes, StandardCharsets.UTF_8);
+            YamlConfiguration config = new YamlConfiguration();
+            config.loadFromString(yamlString);
+
+            int size = config.getInt("size", 27);
             Inventory inventory = Bukkit.createInventory(null, size, title);
-            
-            // Read each item stack
-            for (int i = 0; i < size; i++) {
-                inventory.setItem(i, (ItemStack) dataInput.readObject());
+
+            if (config.isConfigurationSection("items")) {
+                ConfigurationSection section = config.getConfigurationSection("items");
+                for (String key : section.getKeys(false)) {
+                    int slot = Integer.parseInt(key);
+                    ItemStack item = section.getItemStack(key);
+                    if (slot >= 0 && slot < size) {
+                        inventory.setItem(slot, item);
+                    }
+                }
             }
-            
-            dataInput.close();
             return inventory;
         } catch (Exception e) {
             Bukkit.getLogger().log(Level.SEVERE, "Could not deserialize team enderchest inventory! Creating empty one.", e);

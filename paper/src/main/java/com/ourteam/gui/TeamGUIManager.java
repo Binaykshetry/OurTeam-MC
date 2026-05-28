@@ -591,14 +591,29 @@ public class TeamGUIManager {
 
         // Slot 13: The member head showing all the requested details
         long firstPlayed = target.getFirstPlayed();
-        String joinDate = firstPlayed > 0 ? new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(firstPlayed)) : "Never";
+        String serverJoinDate = firstPlayed > 0 ? new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(firstPlayed)) : "Never";
         double totalDeposited = team.getMemberDeposits(target.getUniqueId());
+
+        Team.MemberStats ms = team.getMemberStatsMap().get(target.getUniqueId().toString());
+        int mKills = ms != null ? ms.getKills() : 0;
+        int mDeaths = ms != null ? ms.getDeaths() : 0;
+        long mPlaytimeMs = ms != null ? ms.getPlaytimeMs() : 0;
+        long joinTime = ms != null ? ms.getJoinTime() : firstPlayed;
+        String teamJoinDate = joinTime > 0 ? new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(new java.util.Date(joinTime)) : "Never";
+
+        long hours = mPlaytimeMs / 3600000L;
+        long minutes = (mPlaytimeMs % 3600000L) / 60000L;
+        String formattedPlaytime = hours + "h " + minutes + "m";
 
         inv.setItem(13, createMemberSkullItem(target, "&#33CCFF" + target.getName(),
             "&7Status details for this member",
             "",
             "&f⚡ Role: &#FFCC00" + team.getRole(target.getUniqueId()),
-            "&f⚡ Server Joined: &e" + joinDate,
+            "&f⚡ Server Joined: &e" + serverJoinDate,
+            "&f⚡ Team Joined: &b" + teamJoinDate,
+            "&f⚡ Kills since joining: &a" + mKills,
+            "&f⚡ Deaths since joining: &c" + mDeaths,
+            "&f⚡ Playtime in team: &e" + formattedPlaytime,
             "&f⚡ Total Donated/Deposited: &a$" + String.format("%,.2f", totalDeposited),
             "",
             "&f⚡ UUID: &7" + target.getUniqueId().toString()

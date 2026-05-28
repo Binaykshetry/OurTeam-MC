@@ -54,11 +54,36 @@ public class TeamManager {
         return team;
     }
 
-    public void disbandTeam(Team team) {
+    public synchronized void disbandTeam(Team team) {
         for (UUID member : team.getMembers()) {
             playerTeamMap.remove(member);
             teamChatToggle.remove(member);
         }
+        
+        // Comprehensive wipe to remove all existence of money, score, stats, homes, and alliances
+        team.setBankBalance(0);
+        team.setKills(0);
+        team.setDeaths(0);
+        team.setGrindingPoints(0);
+        if (team.getMemberDeposits() != null) {
+            team.getMemberDeposits().clear();
+        }
+        if (team.getRoles() != null) {
+            team.getRoles().clear();
+        }
+        if (team.getInvites() != null) {
+            team.getInvites().clear();
+        }
+        if (team.getRequests() != null) {
+            team.getRequests().clear();
+        }
+        if (team.getMultiHomes() != null) {
+            team.getMultiHomes().clear();
+        }
+        if (team.getMultiWarps() != null) {
+            team.getMultiWarps().clear();
+        }
+
         teams.remove(team.getId());
         storageManager.deleteTeam(team);
         saveAll();

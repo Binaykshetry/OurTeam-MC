@@ -47,6 +47,13 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        
+        // Bug 5: Clear player's data from lastKillTimestamps map when they quit
+        plugin.getLastKillTimestamps().remove(player.getUniqueId());
+        for (java.util.Map<UUID, Long> inner : plugin.getLastKillTimestamps().values()) {
+            inner.remove(player.getUniqueId());
+        }
+
         Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         if (team != null && team.isLoginAlertsEnabled()) {
             for (UUID memberId : team.getMembers()) {
@@ -71,8 +78,13 @@ public class PlayerListener implements Listener {
         Team victimTeam = plugin.getTeamManager().getPlayerTeam(victim.getUniqueId());
         Team attackerTeam = plugin.getTeamManager().getPlayerTeam(attacker.getUniqueId());
 
+        // Bug 1: Early return if either team is null to prevent null dereferencing or crashes
+        if (victimTeam == null || attackerTeam == null) {
+            return;
+        }
+
         // Check if they are in the exact same team
-        if (victimTeam != null && attackerTeam != null && victimTeam.getId().equals(attackerTeam.getId())) {
+        if (victimTeam.getId().equals(attackerTeam.getId())) {
             String pvpOverride = victimTeam.getPvpForceOverride();
             if (pvpOverride.equalsIgnoreCase("FORCE_ON")) {
                 // Combat is administratively forced ON
@@ -291,7 +303,7 @@ public class PlayerListener implements Listener {
             return;
         }
         if (isDeposit) {
-            if (!team.isPayToggle() && !team.isAdminOrHigher(player.getUniqueId())) {
+            if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId())) {
                 player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
                 return;
             }
@@ -310,8 +322,8 @@ public class PlayerListener implements Listener {
                 player.sendMessage(plugin.colorize("&cError: Deposit failed! Reason: " + response.errorMessage));
             }
         } else {
-            if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can withdraw team funds."));
+            if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
                 return;
             }
             double tBalance = team.getBankBalance();
@@ -319,13 +331,17 @@ public class PlayerListener implements Listener {
                 player.sendMessage(plugin.colorize("&cError: Team bank only has $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
                 return;
             }
-            net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, amount);
-            if (response.transactionSuccess()) {
-                team.removeBankBalance(amount);
-                plugin.getTeamManager().saveTeam(team);
-                player.sendMessage(plugin.colorize("&a[Bank] Withdrew &e$" + String.format("%,.0f", amount) + " &afrom team bank!"));
+            if (team.removeBankBalance(amount)) {
+                net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, amount);
+                if (response.transactionSuccess()) {
+                    plugin.getTeamManager().saveTeam(team);
+                    player.sendMessage(plugin.colorize("&a[Bank] Withdrew &e$" + String.format("%,.0f", amount) + " &afrom team bank!"));
+                } else {
+                    team.addBankBalance(amount); // refund
+                    player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Reason: " + response.errorMessage));
+                }
             } else {
-                player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Reason: " + response.errorMessage));
+                player.sendMessage(plugin.colorize("&cError: Could not deduct funds from the team bank."));
             }
         }
         com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
@@ -367,7 +383,7 @@ public class PlayerListener implements Listener {
 
                 if (plugin.getEconomy() == null) {
                     if (action.equalsIgnoreCase("DEPOSIT")) {
-                        if (!team.isPayToggle() && !team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                        if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                             player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
                             com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
                             return;
@@ -377,8 +393,8 @@ public class PlayerListener implements Listener {
                         plugin.getTeamManager().saveTeam(team);
                         player.sendMessage(plugin.colorize("&a[Simulated Bank] Deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
                     } else if (action.equalsIgnoreCase("WITHDRAW")) {
-                        if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                            player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can withdraw team funds."));
+                        if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                            player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
                             com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
                             return;
                         }
@@ -397,7 +413,7 @@ public class PlayerListener implements Listener {
                 }
 
                 if (action.equalsIgnoreCase("DEPOSIT")) {
-                    if (!team.isPayToggle() && !team.isAdminOrHigher(player.getUniqueId())) {
+                    if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId())) {
                         player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
                         return;
                     }
@@ -416,8 +432,8 @@ public class PlayerListener implements Listener {
                         player.sendMessage(plugin.colorize("&cError: Custom deposit failed! Reason: " + response.errorMessage));
                     }
                 } else if (action.equalsIgnoreCase("WITHDRAW")) {
-                    if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                        player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can withdraw team funds."));
+                    if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                        player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
                         return;
                     }
                     double tBalance = team.getBankBalance();
@@ -457,8 +473,11 @@ public class PlayerListener implements Listener {
         Team victimTeam = plugin.getTeamManager().getPlayerTeam(victim.getUniqueId());
 
         if (killerTeam != null && victimTeam != null && !killerTeam.getId().equals(victimTeam.getId())) {
-            killerTeam.addKill();
-            victimTeam.addDeath();
+            Team.MemberStats killerStats = killerTeam.getMemberStatsMap().computeIfAbsent(killer.getUniqueId().toString(), k -> new Team.MemberStats());
+            Team.MemberStats victimStats = victimTeam.getMemberStatsMap().computeIfAbsent(victim.getUniqueId().toString(), k -> new Team.MemberStats());
+
+            killerStats.addKill();
+            victimStats.addDeath();
 
             long spamThresholdMs = plugin.getConfig().getLong("team-score.spam-threshold-seconds", 60L) * 1000L;
             UUID killerUuid = killer.getUniqueId();
@@ -486,12 +505,8 @@ public class PlayerListener implements Listener {
             int pointsPerKill = plugin.getConfig().getInt("team-score.points-per-kill", 5);
             int pointsLostPerDeath = plugin.getConfig().getInt("team-score.points-lost-per-death", 2);
 
-            killerTeam.addGrindingPoints(pointsPerKill);
-            victimTeam.addGrindingPoints(-pointsLostPerDeath);
-            
-            if (victimTeam.getGrindingPoints() < 0) {
-                victimTeam.setGrindingPoints(0);
-            }
+            killerStats.setGrindingPoints(killerStats.getGrindingPoints() + pointsPerKill);
+            victimStats.setGrindingPoints(Math.max(0, victimStats.getGrindingPoints() - pointsLostPerDeath));
 
             plugin.getTeamManager().saveTeam(killerTeam);
             plugin.getTeamManager().saveTeam(victimTeam);

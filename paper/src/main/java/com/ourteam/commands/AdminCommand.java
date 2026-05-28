@@ -21,7 +21,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
     private final OurTeam plugin;
     private final List<String> SUB_COMMANDS = Arrays.asList(
         "reload", "disband", "forcejoin", "forcekick", "transfer", "info", "auditlog",
-        "eco", "setlevel", "rename", "lock", "unlock", "pvp", "purge", "spy",
+        "eco", "setlevel", "rename", "lock", "unlock", "ban", "pvp", "purge", "spy",
         "lockchest", "cleanchest", "backupchest", "restorechest", "resetbank",
         "addscore", "setscore", "forcecreate", "delallwarps", "sethome", "setwarp", "delhome", "delwarp", "home", "warp"
     );
@@ -77,6 +77,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             case "rename":
                 handleRename(sender, args);
                 break;
+            case "ban":
             case "lock":
                 handleLock(sender, args);
                 break;
@@ -515,7 +516,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
 
     private void handleLock(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(plugin.colorize("&cUsage: /adteam lock <teamName> [reason]"));
+            sender.sendMessage(plugin.colorize("&cUsage: /adteam " + args[0].toLowerCase() + " <teamName> [reason]"));
             return;
         }
 
@@ -525,22 +526,50 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
+        boolean isBan = args[0].equalsIgnoreCase("ban");
+
         StringBuilder reason = new StringBuilder();
         if (args.length >= 3) {
             for (int i = 2; i < args.length; i++) {
                 reason.append(args[i]).append(" ");
             }
         } else {
-            reason.append("Administrative Freeze under investigation.");
+            reason.append(isBan ? "Banned for rule violation." : "Administrative Freeze under investigation.");
         }
 
         String rString = reason.toString().trim();
         team.setSystemLocked(true);
-        team.setLockReason(rString);
+        team.setLockReason(isBan ? "BANNED: " + rString : rString);
+        
+        // Wipe all existence/money/stats/scores/homes/warps of the team immediately upon locking or banning
+        team.setBankBalance(0);
+        team.setKills(0);
+        team.setDeaths(0);
+        team.setGrindingPoints(0);
+        if (team.getMemberDeposits() != null) {
+            team.getMemberDeposits().clear();
+        }
+        if (team.getMultiHomes() != null) {
+            team.getMultiHomes().clear();
+        }
+        if (team.getMultiWarps() != null) {
+            team.getMultiWarps().clear();
+        }
+        team.setEchestData("");
+        if (team.getEchest() != null) {
+            team.getEchest().clear();
+        }
+
         plugin.getTeamManager().saveTeam(team);
 
-        sender.sendMessage(plugin.colorize("&a[Admin] Administratively LOCKED team &e" + team.getName() + " &afor &7" + rString));
-        logAction(sender.getName(), "LOCK_TEAM", team.getName(), "Locked: " + rString);
+        if (isBan) {
+            // Broadcast the ban
+            org.bukkit.Bukkit.broadcastMessage(plugin.colorize("&c&l[Team Ban] &eTeam &b&l" + team.getName() + " &ehas been BANNED! All level points, bank balances, and warp assets are permanently wiped from existence."));
+            logAction(sender.getName(), "BAN_TEAM", team.getName(), "Banned: " + rString);
+        } else {
+            sender.sendMessage(plugin.colorize("&a[Admin] Administratively LOCKED team &e" + team.getName() + " &afor &7" + rString));
+            logAction(sender.getName(), "LOCK_TEAM", team.getName(), "Locked: " + rString);
+        }
     }
 
     private void handleUnlock(CommandSender sender, String[] args) {

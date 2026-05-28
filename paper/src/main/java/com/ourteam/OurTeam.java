@@ -96,6 +96,8 @@ public final class OurTeam extends JavaPlugin {
 
         // Register interest scheduler task for Team Bank
         registerInterestTask();
+        registerHourlyPassiveMoneyTask();
+        registerRepeatingTasks();
 
         getLogger().log(Level.INFO, "OurTeam plugin successfully enabled! Ready for cooperation.");
     }
@@ -110,6 +112,36 @@ public final class OurTeam extends JavaPlugin {
         }
         econ = rsp.getProvider();
         return econ != null;
+    }
+
+    private void registerHourlyPassiveMoneyTask() {
+        // Runs every hour (72000 ticks)
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            if (!getConfig().getBoolean("team-bank.enable", true)) {
+                return;
+            }
+            boolean passiveEnable = getConfig().getBoolean("team-bank.passive-increase.enable", true);
+            if (!passiveEnable) {
+                return;
+            }
+            double amountToIncrease = getConfig().getDouble("team-bank.passive-increase.amount", 100.0);
+            if (amountToIncrease <= 0) {
+                return;
+            }
+
+            for (Team team : teamManager.getTeams().values()) {
+                team.addBankBalance(amountToIncrease);
+                teamManager.saveTeam(team);
+
+                // Notify online players
+                for (java.util.UUID memberUuid : team.getMembers()) {
+                    org.bukkit.entity.Player teammate = getServer().getPlayer(memberUuid);
+                    if (teammate != null && teammate.isOnline()) {
+                        teammate.sendMessage(colorize("&a&l[Team Bank] &fYour team bank received an hourly passive deposit of &e$" + amountToIncrease + "! New balance: &a$" + String.format("%,.2f", team.getBankBalance())));
+                    }
+                }
+            }
+        }, 72000L, 72000L);
     }
 
     private void registerInterestTask() {
@@ -153,6 +185,42 @@ public final class OurTeam extends JavaPlugin {
                 }
             }
         }, interval, interval);
+    }
+
+    private void registerRepeatingTasks() {
+        // Increment playtime for all online team players every 1 minute
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            for (Player player : getServer().getOnlinePlayers()) {
+                Team team = teamManager.getPlayerTeam(player.getUniqueId());
+                if (team != null) {
+                    Team.MemberStats ms = team.getMemberStatsMap().get(player.getUniqueId().toString());
+                    if (ms != null) {
+                        ms.addPlaytimeMs(60000L); // 1 minute
+                    }
+                }
+            }
+        }, 1200L, 1200L);
+
+        // Bug 3: Refresh TAB formatting for all online players every 30 seconds
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            for (Player player : getServer().getOnlinePlayers()) {
+                updateTabFormatting(player);
+            }
+        }, 600L, 600L);
+
+        // Bug 5: Cleanup kill timestamps older than 1 hour
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            long threshold = System.currentTimeMillis() - 3600000L; // 1 hour ago
+            java.util.Iterator<java.util.Map.Entry<java.util.UUID, java.util.Map<java.util.UUID, Long>>> outerIterator = lastKillTimestamps.entrySet().iterator();
+            while (outerIterator.hasNext()) {
+                java.util.Map.Entry<java.util.UUID, java.util.Map<java.util.UUID, Long>> entry = outerIterator.next();
+                java.util.Map<java.util.UUID, Long> victimMap = entry.getValue();
+                victimMap.entrySet().removeIf(victimEntry -> victimEntry.getValue() < threshold);
+                if (victimMap.isEmpty()) {
+                    outerIterator.remove();
+                }
+            }
+        }, 1200L, 1200L);
     }
 
     public net.milkbowl.vault.economy.Economy getEconomy() {

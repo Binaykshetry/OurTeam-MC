@@ -22,6 +22,7 @@ public class Team {
     private java.util.Map<String, String> roles;
     private java.util.Map<String, TeamHome> multiHomes;
     private java.util.Map<String, TeamHome> multiWarps;
+    private java.util.Map<String, MemberStats> memberStatsMap;
     private double homeX;
     private double homeY;
     private double homeZ;
@@ -56,6 +57,8 @@ public class Team {
         this.invites = new HashSet<>();
         this.requests = new HashSet<>();
         this.memberDeposits = new java.util.HashMap<>();
+        this.memberStatsMap = new java.util.HashMap<>();
+        this.memberStatsMap.put(owner.toString(), new MemberStats());
         this.friendlyFire = false;
         this.description = "A strong team in the making!";
         this.hasHome = false;
@@ -180,10 +183,12 @@ public class Team {
 
     public void addMember(UUID uuid) {
         members.add(uuid);
+        getMemberStatsMap().put(uuid.toString(), new MemberStats());
     }
 
     public void removeMember(UUID uuid) {
         members.remove(uuid);
+        getMemberStatsMap().remove(uuid.toString());
     }
 
     public Set<UUID> getInvites() {
@@ -369,24 +374,63 @@ public class Team {
     public float getHomeYaw() { return homeYaw; }
     public float getHomePitch() { return homePitch; }
 
-    public int getKills() { return kills; }
-    public void addKill() { this.kills++; }
-    public void setKills(int kills) { this.kills = kills; }
+    public int getKills() {
+        int total = 0;
+        for (UUID m : getMembers()) {
+            MemberStats ms = getMemberStatsMap().get(m.toString());
+            if (ms != null) {
+                total += ms.getKills();
+            }
+        }
+        return total;
+    }
+    public void addKill() {
+        MemberStats ms = getMemberStatsMap().computeIfAbsent(owner.toString(), k -> new MemberStats());
+        ms.addKill();
+    }
+    public void setKills(int kills) {
+        MemberStats ms = getMemberStatsMap().computeIfAbsent(owner.toString(), k -> new MemberStats());
+        ms.setKills(kills);
+    }
     
-    public int getDeaths() { return deaths; }
-    public void addDeath() { this.deaths++; }
-    public void setDeaths(int deaths) { this.deaths = deaths; }
+    public int getDeaths() {
+        int total = 0;
+        for (UUID m : getMembers()) {
+            MemberStats ms = getMemberStatsMap().get(m.toString());
+            if (ms != null) {
+                total += ms.getDeaths();
+            }
+        }
+        return total;
+    }
+    public void addDeath() {
+        MemberStats ms = getMemberStatsMap().computeIfAbsent(owner.toString(), k -> new MemberStats());
+        ms.addDeath();
+    }
+    public void setDeaths(int deaths) {
+        MemberStats ms = getMemberStatsMap().computeIfAbsent(owner.toString(), k -> new MemberStats());
+        ms.setDeaths(deaths);
+    }
 
     public int getGrindingPoints() {
-        return grindingPoints;
+        int total = 0;
+        for (UUID m : getMembers()) {
+            MemberStats ms = getMemberStatsMap().get(m.toString());
+            if (ms != null) {
+                total += ms.getGrindingPoints();
+            }
+        }
+        return total;
     }
 
     public void setGrindingPoints(int grindingPoints) {
-        this.grindingPoints = grindingPoints;
+        MemberStats ms = getMemberStatsMap().computeIfAbsent(owner.toString(), k -> new MemberStats());
+        ms.setGrindingPoints(grindingPoints);
     }
 
     public void addGrindingPoints(int points) {
-        this.grindingPoints += points;
+        MemberStats ms = getMemberStatsMap().computeIfAbsent(owner.toString(), k -> new MemberStats());
+        ms.setGrindingPoints(Math.max(0, ms.getGrindingPoints() + points));
     }
 
     public int getCachedScore() {
@@ -563,5 +607,47 @@ public class Team {
             }
         }
         return 1;
+    }
+
+    public java.util.Map<String, MemberStats> getMemberStatsMap() {
+        if (memberStatsMap == null) {
+            memberStatsMap = new java.util.HashMap<>();
+        }
+        for (UUID m : getMembers()) {
+            if (!memberStatsMap.containsKey(m.toString())) {
+                memberStatsMap.put(m.toString(), new MemberStats());
+            }
+        }
+        return memberStatsMap;
+    }
+
+    public static class MemberStats {
+        private int kills = 0;
+        private int deaths = 0;
+        private int grindingPoints = 0;
+        private long joinTime = 0;
+        private long playtimeMs = 0;
+
+        public MemberStats() {
+            this.joinTime = System.currentTimeMillis();
+        }
+
+        public int getKills() { return kills; }
+        public void addKill() { this.kills++; }
+        public void setKills(int kills) { this.kills = kills; }
+
+        public int getDeaths() { return deaths; }
+        public void addDeath() { this.deaths++; }
+        public void setDeaths(int deaths) { this.deaths = deaths; }
+
+        public int getGrindingPoints() { return grindingPoints; }
+        public void setGrindingPoints(int grindingPoints) { this.grindingPoints = grindingPoints; }
+
+        public long getJoinTime() { return joinTime; }
+        public void setJoinTime(long joinTime) { this.joinTime = joinTime; }
+
+        public long getPlaytimeMs() { return playtimeMs; }
+        public void addPlaytimeMs(long ms) { this.playtimeMs += ms; }
+        public void setPlaytimeMs(long ms) { this.playtimeMs = ms; }
     }
 }

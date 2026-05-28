@@ -202,7 +202,10 @@ cooldowns-and-teleportation:
   teleport-sound: "ENTITY_ENDERMAN_TELEPORT"
 
   # Limits for maximum homes per team. Overridden by permissions 'ourteam.homes.X'.
-  max-homes-per-team: 3
+  max-homes-per-team: 1
+
+  # Limits for maximum warps per team. Overridden by permissions 'ourteam.warps.X'.
+  max-warps-per-team: 1
 
 # Virtual Enderchest Shared Inventories
 enderchest-settings:
@@ -331,6 +334,11 @@ team-bank:
   # Default: 12000 ticks = 10 minutes. Set lower for more frequent ticks,
   # or set 24000 ticks (20 minutes = 1 Minecraft Day cycle) for daily rewards.
   interest-interval-ticks: 12000
+
+  # Passive hourly money increase configuration to the team bank (runs every 1 hour)
+  passive-increase:
+    enable: true
+    amount: 100.0
 
 # Advanced Team Score System
 # =============================================================================

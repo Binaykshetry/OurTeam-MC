@@ -36,6 +36,11 @@ public class GUIListener implements Listener {
         // Cancel event to prevent taking items out of layout
         event.setCancelled(true);
 
+        // Bug 6: If the item clicked is null or AIR, return early to prevent NullPointerExceptions on rapid clicking empty slots
+        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == org.bukkit.Material.AIR) {
+            return;
+        }
+
         Player player = (Player) event.getWhoClicked();
         TeamGUIHolder holder = (TeamGUIHolder) clickedInv.getHolder();
         String menu = holder.getMenuType();
@@ -274,7 +279,7 @@ public class GUIListener implements Listener {
         else if ("bank".equalsIgnoreCase(menu)) {
             switch (slot) {
                 case 10: // Direct Deposit $100
-                    if (!team.isPayToggle() && !team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                    if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                         player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
                         break;
                     }
@@ -303,7 +308,7 @@ public class GUIListener implements Listener {
                     break;
 
                 case 11: // Custom Deposit (Writable Book)
-                    if (!team.isPayToggle() && !team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                    if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                         player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
                         break;
                     }
@@ -313,8 +318,8 @@ public class GUIListener implements Listener {
                     break;
 
                 case 15: // Custom Withdraw (Redstone)
-                    if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                        player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can withdraw team funds."));
+                    if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                        player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
                         break;
                     }
                     player.closeInventory();
@@ -323,8 +328,8 @@ public class GUIListener implements Listener {
                     break;
 
                 case 16: // Direct Withdraw $100
-                    if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                        player.sendMessage(plugin.colorize("&cError: Only Team Admins or Owners can withdraw team funds."));
+                    if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
+                        player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
                         break;
                     }
                     if (team.getBankBalance() >= 100) {
