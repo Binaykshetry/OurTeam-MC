@@ -229,6 +229,13 @@ public class Team {
         getRequests().remove(uuid);
     }
 
+    public java.util.Map<String, Double> getMemberDeposits() {
+        if (memberDeposits == null) {
+            memberDeposits = new java.util.HashMap<>();
+        }
+        return memberDeposits;
+    }
+
     public double getMemberDeposits(UUID uuid) {
         if (memberDeposits == null) {
             memberDeposits = new java.util.HashMap<>();
