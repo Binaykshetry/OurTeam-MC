@@ -350,6 +350,51 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerChatInteraction(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
+        if (plugin.getActiveGeneralAction().containsKey(player.getUniqueId())) {
+            event.setCancelled(true);
+            String action = plugin.getActiveGeneralAction().remove(player.getUniqueId());
+            String text = event.getMessage().trim();
+
+            if (text.equalsIgnoreCase("cancel")) {
+                player.sendMessage(plugin.colorize("&cCancelled team creation process."));
+                return;
+            }
+
+            if (action.equalsIgnoreCase("CREATE_TEAM")) {
+                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) != null) {
+                        player.sendMessage(plugin.getMsg("already-in-team"));
+                        return;
+                    }
+
+                    int minLen = plugin.getConfig().getInt("team-settings.min-name-length", 3);
+                    int maxLen = plugin.getConfig().getInt("team-settings.max-name-length", 12);
+
+                    if (text.length() < minLen || text.length() > maxLen) {
+                        player.sendMessage(plugin.colorize("&cTeam names must be between " + minLen + " and " + maxLen + " characters long."));
+                        return;
+                    }
+
+                    for (String blocked : plugin.getConfig().getStringList("team-settings.blocked-names")) {
+                        if (text.toLowerCase().contains(blocked.toLowerCase())) {
+                            player.sendMessage(plugin.colorize("&cThis team name is blocked or contains inappropriate words."));
+                            return;
+                        }
+                    }
+
+                    if (plugin.getTeamManager().getTeamByName(text) != null) {
+                        player.sendMessage(plugin.getMsg("team-already-exists"));
+                        return;
+                    }
+
+                    Team team = plugin.getTeamManager().createTeam(text, player);
+                    player.sendMessage(plugin.getMsg("team-created").replace("{team}", team.getName()));
+                    plugin.updateTabFormatting(player);
+                });
+            }
+            return;
+        }
+
         if (plugin.getActiveBankAction().containsKey(player.getUniqueId())) {
             event.setCancelled(true);
             String action = plugin.getActiveBankAction().remove(player.getUniqueId());
