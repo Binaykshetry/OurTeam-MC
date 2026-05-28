@@ -874,6 +874,51 @@ public class TeamGUIManager {
         player.openInventory(inv);
     }
 
+    /**
+     * Creates and opens the No Team / Creation Hub GUI (Menu: noteam)
+     */
+    public void openNoTeamMenu(Player player) {
+        String title = plugin.colorize("&#33CCFFTeam Hub &7» &fDiscovery");
+        TeamGUIHolder holder = new TeamGUIHolder("noteam", "none");
+        Inventory inv = Bukkit.createInventory(holder, 27, title);
+
+        // Fill background with decorative panes
+        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
+        for (int i = 0; i < 27; i++) {
+            inv.setItem(i, marker);
+        }
+
+        // Slot 11: Create a New Team
+        inv.setItem(11, createGuiItem(Material.GRASS_BLOCK,
+            "&#33CCFF&lCreate a New Team",
+            "&7Form an organization to pool your efforts,",
+            "&7protect your lands, trade with bank interest,",
+            "&7and conquer team leaderboards!",
+            "",
+            "&a▶ Click to start creation process"
+        ));
+
+        // Slot 13: View Active Teams Directory
+        inv.setItem(13, createGuiItem(Material.BOOK,
+            "&#FFCC00&lActive Teams Directory",
+            "&7Expand your network! Look through all existing",
+            "&7teams, and submit a Join Request to join one.",
+            "",
+            "&e▶ Click to browse active teams"
+        ));
+
+        // Slot 15: Your Received Invitations & Options
+        inv.setItem(15, createGuiItem(Material.PAPER,
+            "&#CC66FF&lYour Invitations",
+            "&7See teams that have invited you, or requests",
+            "&7that you have pending.",
+            "",
+            "&d▶ Click to view active invites"
+        ));
+
+        player.openInventory(inv);
+    }
+
     /* Interface helpers */
     private ItemStack createGuiItem(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
