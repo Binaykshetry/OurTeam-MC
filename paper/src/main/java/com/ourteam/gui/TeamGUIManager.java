@@ -107,10 +107,6 @@ public class TeamGUIManager {
         }
         return defaultSlot;
     }
-            return slot;
-        }
-        return defaultSlot;
-    }
 
     /**
      * Creates and opens the Main Team Dashboard (Menu: main)
