@@ -389,3 +389,121 @@ command-toggles:
   info: true
   list: true
 
+#  =============================================================================
+#   __________  __  ___________    _________  ___________ _________ ______ 
+#  /  _  \_   \/  \/   /\_____  \  /   _____/ \_   _____/ \___   _//   ___/ 
+# /  /_\  \\     /\   /  /   |   \ \_____  \   |    __)_    |      \_____  \  
+# \   \_   \\   / /   / /    |    \/        \  |        \   |   /|        \ 
+#  \___/__/ \__/  \__/  \_______  /_______  / /_______  /  |___| /_______  / 
+#                               \/        \/          \/                 \/  
+#   GUI Engine Layout & Menu Customizations (Sizes & Titles configuration)
+#  =============================================================================
+# Configure the title and inventory slot size of each GUI menu dynamically!
+# Sizes MUST be integers and multiple of 9 (9, 18, 27, 36, 45, or 54).
+# Slots are 0-indexed (starting at 0 for the first box).
+gui-settings:
+  main:
+    title: "&#33CCFFTeam Dashboard &7» &f{team}"
+    size: 27
+    bank-slot: 10
+    members-slot: 11
+    allies-slot: 12
+    homes-warps-slot: 13
+    echest-slot: 14
+    leaderboard-slot: 15
+    settings-slot: 16
+    leave-slot: 18
+
+  noteam:
+    title: "&#33CCFFTeam Hub &7» &fDiscovery"
+    size: 27
+    create-slot: 11
+    list-slot: 13
+    invitations-slot: 15
+
+  alliances:
+    title: "&#33CCFFAlly Diplomacy Hub"
+    size: 54
+    plaque-slot: 4
+    back-slot: 49
+    list-start: 9
+    list-end: 44
+
+  settings:
+    title: "&#FF9933Team Settings Panel"
+    size: 27
+    friendlyfire-slot: 10
+    teampay-slot: 11
+    echestlock-slot: 12
+    stats-slot: 13
+    joinpolicy-slot: 14
+    teamchat-slot: 15
+    invitepermission-slot: 16
+    loginalerts-slot: 19
+    requests-slot: 20
+    leave-slot: 21
+    disband-slot: 22
+    back-slot: 26
+
+  members:
+    title: "&#33CCFFMembers Directory &7» &f{team}"
+    size: 54
+    back-slot: 49
+
+  bank:
+    title: "&#FFCC00&lTeam Bank &7» &fDeposit/Withdraw"
+    size: 27
+    deposit100-slot: 10
+    customdeposit-slot: 11
+    ledger-slot: 13
+    customwithdraw-slot: 15
+    withdraw100-slot: 16
+    back-slot: 22
+
+  homes_warps:
+    title: "&#FF3336Homes & Warp locations"
+    size: 27
+    homes-list-slot: 11
+    warps-list-slot: 15
+    back-slot: 22
+
+  homes_list:
+    title: "&#FF3336Homes Directory &7» &f{team}"
+    size: 27
+    back-slot: 22
+
+  warps_list:
+    title: "&#FF3336Warps Directory &7» &f{team}"
+    size: 27
+    back-slot: 22
+
+  member_detail:
+    title: "&#CC66FFMember Options &7» &f{target}"
+    size: 27
+    role-admin-slot: 10
+    role-mod-slot: 11
+    role-member-slot: 15
+    kick-slot: 16
+    back-slot: 22
+
+  leaderboard:
+    title: "&#33CCFFLeaderboard &7- &#A9C9FFTop Teams"
+    size: 54
+    plaque-slot: 4
+    back-slot: 49
+    list-start: 9
+    list-end: 44
+
+  requests_list:
+    title: "&#33CCFFJoin Requests Pool &7» &f{team}"
+    size: 27
+    back-slot: 22
+
+  list:
+    title: "&#33CCFF&lALL ACTIVE TEAMS"
+    size: 54
+    info-slot: 4
+    back-slot: 49
+    list-start: 9
+    list-end: 44
+

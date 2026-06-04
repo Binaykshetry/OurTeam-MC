@@ -1,0 +1,9 @@
+title: "&#FFCC00&lTeam Bank &7» &fDeposit/Withdraw"
+size: 27
+deposit100-slot: 10
+customdeposit-slot: 11
+ledger-slot: 13
+history-slot: 12
+customwithdraw-slot: 15
+withdraw100-slot: 16
+back-slot: 22
