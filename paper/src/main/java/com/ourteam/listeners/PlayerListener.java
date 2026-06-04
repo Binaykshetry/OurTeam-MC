@@ -317,6 +317,7 @@ public class PlayerListener implements Listener {
             if (response.transactionSuccess()) {
                 team.addBankBalance(amount);
                 team.addMemberDeposit(player.getUniqueId(), amount);
+                team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
                 plugin.getTeamManager().saveTeam(team);
                 player.sendMessage(plugin.colorize("&a[Bank] Deposited &e$" + String.format("%,.0f", amount) + " &ainto team bank!"));
             } else {
@@ -335,6 +336,7 @@ public class PlayerListener implements Listener {
             if (team.removeBankBalance(amount)) {
                 net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, amount);
                 if (response.transactionSuccess()) {
+                    team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
                     plugin.getTeamManager().saveTeam(team);
                     player.sendMessage(plugin.colorize("&a[Bank] Withdrew &e$" + String.format("%,.0f", amount) + " &afrom team bank!"));
                 } else {
@@ -436,6 +438,7 @@ public class PlayerListener implements Listener {
                         }
                         team.addBankBalance(amount);
                         team.addMemberDeposit(player.getUniqueId(), amount);
+                        team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
                         plugin.getTeamManager().saveTeam(team);
                         player.sendMessage(plugin.colorize("&a[Simulated Bank] Deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
                     } else if (action.equalsIgnoreCase("WITHDRAW")) {
@@ -451,6 +454,7 @@ public class PlayerListener implements Listener {
                             return;
                         }
                         team.removeBankBalance(amount);
+                        team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
                         plugin.getTeamManager().saveTeam(team);
                         player.sendMessage(plugin.colorize("&a[Simulated Bank] Withdrew &e$" + String.format("%,.2f", amount) + " &afrom team bank!"));
                     }
@@ -472,6 +476,7 @@ public class PlayerListener implements Listener {
                     if (response.transactionSuccess()) {
                         team.addBankBalance(amount);
                         team.addMemberDeposit(player.getUniqueId(), amount);
+                        team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
                         plugin.getTeamManager().saveTeam(team);
                         player.sendMessage(plugin.colorize("&a[Bank] Custom deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
                     } else {
@@ -490,6 +495,7 @@ public class PlayerListener implements Listener {
                     net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, amount);
                     if (response.transactionSuccess()) {
                         team.removeBankBalance(amount);
+                        team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
                         plugin.getTeamManager().saveTeam(team);
                         player.sendMessage(plugin.colorize("&a[Bank] Custom withdrew &e$" + String.format("%,.2f", amount) + " &afrom team bank!"));
                     } else {

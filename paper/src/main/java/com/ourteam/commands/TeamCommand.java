@@ -1,5 +1,6 @@
 package com.ourteam.commands;
 
+// Touch edit to force synchronization and fix bad git status states
 import com.ourteam.OurTeam;
 import com.ourteam.model.Team;
 import org.bukkit.Bukkit;
@@ -44,7 +45,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
             if (team == null) {
-                sendNoTeamMenu(player);
+                plugin.getGuiManager().openNoTeamMenu(player);
             } else {
                 plugin.getGuiManager().openMainMenu(player, team);
                 player.sendMessage(plugin.colorize("&a[OurTeam] Opening Team GUI menu..."));
@@ -202,7 +203,11 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
 
     private void handleCreate(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(plugin.colorize("&cUsage: /team create <name>"));
+            if (plugin.getTeamManager().getPlayerTeam(player.getUniqueId()) != null) {
+                player.sendMessage(plugin.getMsg("already-in-team"));
+                return;
+            }
+            plugin.getGuiManager().openNoTeamMenu(player);
             return;
         }
 
@@ -707,47 +712,8 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleTop(Player player) {
-        // Fetch all teams
-        java.util.List<Team> sorted = new java.util.ArrayList<>(plugin.getTeamManager().getAllTeams());
-        // For each, recalculate score
-        for (Team t : sorted) {
-            t.recalculateScore(plugin);
-        }
-        // Sort from highest to lowest score
-        sorted.sort((t1, t2) -> Integer.compare(t2.getCachedScore(), t1.getCachedScore()));
-
-        player.sendMessage(plugin.colorize("&8&m========================================"));
-        player.sendMessage(plugin.colorize("&#33CCFF&lL E A D E R B O A R D &7- &#FFCC00&lTOP 10 TEAMS"));
-
-        // Add upper message
-        Team myTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
-        if (myTeam != null) {
-            myTeam.recalculateScore(plugin);
-            int myRank = myTeam.getRankPosition(plugin);
-            int total = sorted.size();
-            player.sendMessage(plugin.colorize("&#00FFCCYour Team: &f" + myTeam.getName() + " &7| &#FFCC00Rank: &e#" + myRank + "/" + total + " &7| &e" + myTeam.getCachedScore() + " pts"));
-        } else {
-            player.sendMessage(plugin.colorize("&cYou are not in a team. Join or create a team to compete!"));
-        }
-        player.sendMessage(plugin.colorize("&8&m========================================"));
-
-        int limit = Math.min(10, sorted.size());
-        if (limit == 0) {
-            player.sendMessage(plugin.colorize("&7No teams have registered yet!"));
-        } else {
-            for (int i = 0; i < limit; i++) {
-                Team team = sorted.get(i);
-                String prefix = "";
-                switch (i) {
-                    case 0: prefix = "&#FFD700&l1st "; break;
-                    case 1: prefix = "&#C0C0C0&l2nd "; break;
-                    case 2: prefix = "&#CD7F32&l3rd "; break;
-                    default: prefix = "&f&l" + (i + 1) + "th "; break;
-                }
-                player.sendMessage(plugin.colorize(prefix + " &#00FFCC" + team.getName() + " &7- &e" + team.getCachedScore() + " pts &7(&e" + team.getMembers().size() + " &7members)"));
-            }
-        }
-        player.sendMessage(plugin.colorize("&8&m========================================"));
+        Team viewerTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        plugin.getGuiManager().openLeaderboardMenu(player, viewerTeam);
     }
 
     private void handleEchest(Player player) {
@@ -774,6 +740,10 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
     }
 
     private void handleBank(Player player) {
+        if (!plugin.getConfig().getBoolean("team-bank.enable", true)) {
+            player.sendMessage(plugin.colorize("&cError: Team Bank feature is currently disabled by the server administration."));
+            return;
+        }
         Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
         if (team == null) {
             player.sendMessage(plugin.getMsg("not-in-team"));

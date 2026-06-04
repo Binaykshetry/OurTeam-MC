@@ -47,6 +47,7 @@ public class Team {
     private boolean teamChatDisabled;
     private boolean memberInviteDisabled;
     private boolean loginAlertsDisabled;
+    private java.util.List<TeamTransaction> bankTransactions;
 
     public Team(String name, UUID owner) {
         this.id = UUID.randomUUID();
@@ -83,6 +84,21 @@ public class Team {
         this.teamChatDisabled = false;
         this.memberInviteDisabled = false;
         this.loginAlertsDisabled = false;
+        this.bankTransactions = new java.util.ArrayList<>();
+    }
+
+    public java.util.List<TeamTransaction> getBankTransactions() {
+        if (this.bankTransactions == null) {
+            this.bankTransactions = new java.util.ArrayList<>();
+        }
+        return this.bankTransactions;
+    }
+
+    public void addTransaction(String playerName, UUID playerUuid, String type, double amount) {
+        getBankTransactions().add(0, new TeamTransaction(playerName, playerUuid, type, amount));
+        while (getBankTransactions().size() > 50) {
+            getBankTransactions().remove(getBankTransactions().size() - 1);
+        }
     }
 
     public boolean isSystemLocked() {

@@ -47,6 +47,19 @@ public final class OurTeam extends JavaPlugin {
             saveResource("team.yml", false);
         }
 
+        // Save default TeamGUI templates if they don't exist
+        String[] guiFiles = {
+            "main.yml", "noteam.yml", "alliances.yml", "settings.yml", "members.yml",
+            "bank.yml", "homes_warps.yml", "homes_list.yml", "warps_list.yml",
+            "member_detail.yml", "leaderboard.yml", "requests_list.yml", "list.yml", "bank_history.yml"
+        };
+        for (String fName : guiFiles) {
+            File targetFile = new File(getDataFolder(), "TeamGUI/" + fName);
+            if (!targetFile.exists()) {
+                saveResource("TeamGUI/" + fName, false);
+            }
+        }
+
         // Initialize directories
         File extensionsDir = new File(getDataFolder(), "extensions");
         if (!extensionsDir.exists()) {
@@ -384,6 +397,9 @@ public final class OurTeam extends JavaPlugin {
         loadMessages();
         loadTeamPermissions();
         loadChestPermissions();
+        if (guiManager != null) {
+            guiManager.clearCache();
+        }
     }
 
     /**

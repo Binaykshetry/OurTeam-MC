@@ -20,99 +20,231 @@ import java.util.UUID;
 public class TeamGUIManager {
 
     private final OurTeam plugin;
+    private final java.util.Map<String, org.bukkit.configuration.file.FileConfiguration> guiConfigs = new java.util.HashMap<>();
 
     public TeamGUIManager(OurTeam plugin) {
         this.plugin = plugin;
+    }
+
+    public void clearCache() {
+        guiConfigs.clear();
+    }
+
+    public org.bukkit.configuration.file.FileConfiguration getGuiConfig(String menuKey) {
+        String key = menuKey.toLowerCase();
+        if (guiConfigs.containsKey(key)) {
+            return guiConfigs.get(key);
+        }
+        java.io.File file = new java.io.File(plugin.getDataFolder(), "TeamGUI/" + key + ".yml");
+        if (!file.exists()) {
+            file.getParentFile().mkdirs();
+            try {
+                java.io.InputStream in = plugin.getResource("TeamGUI/" + key + ".yml");
+                if (in != null) {
+                    java.nio.file.Files.copy(in, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    file.createNewFile();
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning("Could not save default GUI config for: " + key);
+            }
+        }
+        org.bukkit.configuration.file.FileConfiguration cfg = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file);
+        guiConfigs.put(key, cfg);
+        return cfg;
+    }
+
+    public int getMenuSize(String menuKey, int defaultSize) {
+        int configuredSize = getGuiConfig(menuKey).getInt("size", -1);
+        if (configuredSize == -1) {
+            configuredSize = plugin.getConfig().getInt("gui-settings." + menuKey + ".size", defaultSize);
+        }
+        if (configuredSize > 0 && configuredSize <= 54 && configuredSize % 9 == 0) {
+            return configuredSize;
+        }
+        return defaultSize;
+    }
+
+    public String getMenuTitle(String menuKey, String defaultTitle) {
+        String title = getGuiConfig(menuKey).getString("title", null);
+        if (title == null) {
+            title = plugin.getConfig().getString("gui-settings." + menuKey + ".title", defaultTitle);
+        }
+        return plugin.colorize(title);
+    }
+
+    public String getMenuTitle(String menuKey, String defaultTitle, Team team) {
+        String title = getGuiConfig(menuKey).getString("title", null);
+        if (title == null) {
+            title = plugin.getConfig().getString("gui-settings." + menuKey + ".title", defaultTitle);
+        }
+        if (team != null) {
+            title = title.replace("{team}", team.getName());
+        } else {
+            title = title.replace("{team}", "None");
+        }
+        return plugin.colorize(title);
+    }
+
+    public String getMenuTitle(String menuKey, String defaultTitle, String placeholder, String replacement) {
+        String title = getGuiConfig(menuKey).getString("title", null);
+        if (title == null) {
+            title = plugin.getConfig().getString("gui-settings." + menuKey + ".title", defaultTitle);
+        }
+        if (placeholder != null && replacement != null) {
+            title = title.replace(placeholder, replacement);
+        }
+        return plugin.colorize(title);
+    }
+
+    public int getMenuSlot(String menuKey, String path, int defaultSlot, int maxSlot) {
+        int slot = getGuiConfig(menuKey).getInt(path, -1);
+        if (slot == -1) {
+            slot = plugin.getConfig().getInt("gui-settings." + menuKey + "." + path, defaultSlot);
+        }
+        if (slot >= 0 && slot < maxSlot) {
+            return slot;
+        }
+        return defaultSlot;
+    }
+            return slot;
+        }
+        return defaultSlot;
     }
 
     /**
      * Creates and opens the Main Team Dashboard (Menu: main)
      */
     public void openMainMenu(Player player, Team team) {
-        String title = plugin.colorize("&#33CCFFTeam Dashboard &7» &f" + team.getName());
+        String title = getMenuTitle("main", "&#33CCFFTeam Dashboard &7» &f" + team.getName(), team);
+        int size = getMenuSize("main", 27);
         TeamGUIHolder holder = new TeamGUIHolder("main", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
+        Inventory inv = Bukkit.createInventory(holder, size, title);
 
         // Fill background with decorative panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < size; i++) {
             inv.setItem(i, marker);
         }
 
-        // Slot 10: Team Bank
-        inv.setItem(10, createGuiItem(Material.GOLD_INGOT, 
-            "&#FFCC00Team Bank Balance", 
-            "&7Status: Economy Management",
-            "",
-            "&fBalance: &a$" + String.format("%,.2f", team.getBankBalance()),
-            "",
-            "&a▶ Click to open Bank Menu"
-        ));
+        // Team Bank item placement
+        int bankSlot = getMenuSlot("main", "bank-slot", 10, size);
+        boolean bankEnabled = plugin.getConfig().getBoolean("team-bank.enable", true);
+        if (bankSlot >= 0 && bankSlot < size) {
+            if (bankEnabled) {
+                inv.setItem(bankSlot, createGuiItem(Material.GOLD_INGOT, 
+                    "&#FFCC00Team Bank Balance", 
+                    "&7Status: Economy Management",
+                    "",
+                    "&fBalance: &a$" + String.format("%,.2f", team.getBankBalance()),
+                    "",
+                    "&a▶ Click to open Bank Menu"
+                ));
+            } else {
+                inv.setItem(bankSlot, createGuiItem(Material.BARRIER, 
+                    "&c&lTeam Bank Balance &7(DISABLED)", 
+                    "&7Status: Economy Management &c(Disabled)",
+                    "",
+                    "&cThe Team Bank function has been disabled",
+                    "&cby the server administration.",
+                    ""
+                ));
+            }
+        }
 
-        // Slot 11: Team Members
-        inv.setItem(11, createMemberSkullItem(player, 
-            "&#CC66FFTeam Members &7(" + team.getMembers().size() + ")", 
-            "&7Status: Roster Management",
-            "",
-            "&fTotal Members: &e" + team.getMembers().size() + "/8",
-            "",
-            "&a▶ Click to view team members roster"
-        ));
+        // Team Members
+        int membersSlot = getMenuSlot("main", "members-slot", 11, size);
+        if (membersSlot >= 0 && membersSlot < size) {
+            inv.setItem(membersSlot, createMemberSkullItem(player, 
+                "&#CC66FFTeam Members &7(" + team.getMembers().size() + ")", 
+                "&7Status: Roster Management",
+                "",
+                "&fTotal Members: &e" + team.getMembers().size() + "/8",
+                "",
+                "&a▶ Click to view team members roster"
+            ));
+        }
 
-        // Slot 12: Ally Diplomacy / System
-        inv.setItem(12, createGuiItem(Material.SHIELD, 
-            "&#33CCFFAlly Diplomacy Hub", 
-            "&7Status: Active Treaties & Pacts",
-            "",
-            "&fForm coalitions, declare non-aggression",
-            "&fpacts, and reinforce allied groups.",
-            "",
-            "&a▶ Click to manage team alliances"
-        ));
+        // Ally Diplomacy / System
+        int alliesSlot = getMenuSlot("main", "allies-slot", 12, size);
+        if (alliesSlot >= 0 && alliesSlot < size) {
+            inv.setItem(alliesSlot, createGuiItem(Material.SHIELD, 
+                "&#33CCFFAlly Diplomacy Hub", 
+                "&7Status: Active Treaties & Pacts",
+                "",
+                "&fForm coalitions, declare non-aggression",
+                "&fpacts, and reinforce allied groups.",
+                "",
+                "&a▶ Click to manage team alliances"
+            ));
+        }
 
-        // Slot 13: Team Homes & Warps. ALWAYS SHOWN!
-        inv.setItem(13, createGuiItem(Material.COMPASS, 
-            "&#FF3336Homes & Warp locations", 
-            "&7Status: Navigation Hub",
-            "",
-            "&fTotal Homes Set: &e" + team.getMultiHomes().size(),
-            "&fTotal Warps Set: &b" + team.getMultiWarps().size(),
-            "",
-            "&a▶ Click to open Homes & Warps Menu"
-        ));
+        // Team Homes & Warps
+        int homesWarpsSlot = getMenuSlot("main", "homes-warps-slot", 13, size);
+        if (homesWarpsSlot >= 0 && homesWarpsSlot < size) {
+            inv.setItem(homesWarpsSlot, createGuiItem(Material.COMPASS, 
+                "&#FF3336Homes & Warp locations", 
+                "&7Status: Navigation Hub",
+                "",
+                "&fTotal Homes Set: &e" + team.getMultiHomes().size(),
+                "&fTotal Warps Set: &b" + team.getMultiWarps().size(),
+                "",
+                "&a▶ Click to open Homes & Warps Menu"
+            ));
+        }
 
-        // Slot 14: Team Enderchest
-        inv.setItem(14, createGuiItem(Material.ENDER_CHEST, 
-            "&#CC99FFTeam Shared Enderchest", 
-            "&7Status: Public vault of valuables",
-            "",
-            "&fSlots: &727 Slots",
-            "",
-            "&a▶ Click to access virtual chest storage"
-        ));
+        // Team Enderchest
+        int echestSlot = getMenuSlot("main", "echest-slot", 14, size);
+        if (echestSlot >= 0 && echestSlot < size) {
+            inv.setItem(echestSlot, createGuiItem(Material.ENDER_CHEST, 
+                "&#CC99FFTeam Shared Enderchest", 
+                "&7Status: Public vault of valuables",
+                "",
+                "&fSlots: &727 Slots",
+                "",
+                "&a▶ Click to access virtual chest storage"
+            ));
+        }
 
-        // Slot 15: Team Statistics & Leaderboards
-        double kdr = team.getDeaths() > 0 ? (double) team.getKills() / team.getDeaths() : team.getKills();
-        inv.setItem(15, createGuiItem(Material.DIAMOND_SWORD, 
-            "&#FF3333Team Statistics & Leaderboards", 
-            "&7Status: Core Competitive Metrics",
-            "",
-            "&fKills: &a" + team.getKills() + " &7| &fDeaths: &c" + team.getDeaths(),
-            "&fKDR: &e" + String.format("%.2f", kdr) + " Ratio",
-            "&fPoints: &6" + team.getGrindingPoints() + " pts",
-            "",
-            "&e▶ Click to view Leaderboards"
-        ));
+        // Team Statistics & Leaderboards
+        int leaderboardSlot = getMenuSlot("main", "leaderboard-slot", 15, size);
+        if (leaderboardSlot >= 0 && leaderboardSlot < size) {
+            double kdr = team.getDeaths() > 0 ? (double) team.getKills() / team.getDeaths() : team.getKills();
+            inv.setItem(leaderboardSlot, createGuiItem(Material.DIAMOND_SWORD, 
+                "&#FF3333Team Statistics & Leaderboards", 
+                "&7Status: Core Competitive Metrics",
+                "",
+                "&fKills: &a" + team.getKills() + " &7| &fDeaths: &c" + team.getDeaths(),
+                "&fKDR: &e" + String.format("%.2f", kdr) + " Ratio",
+                "&fPoints: &6" + team.getGrindingPoints() + " pts",
+                "",
+                "&e▶ Click to view Leaderboards"
+            ));
+        }
 
-        // Slot 16: Settings Menu Toggle
-        inv.setItem(16, createGuiItem(Material.COMPARATOR, 
-            "&#FF6600Team Settings Panel", 
-            "&7Status: Configurations",
-            "",
-            "&fFriendly Fire: " + (team.isFriendlyFireEnabled() ? "&aON" : "&cOFF"),
-            "",
-            "&a▶ Click to manage rules and toggles"
-        ));
+        // Settings Menu Toggle
+        int settingsSlot = getMenuSlot("main", "settings-slot", 16, size);
+        if (settingsSlot >= 0 && settingsSlot < size) {
+            inv.setItem(settingsSlot, createGuiItem(Material.COMPARATOR, 
+                "&#FF6600Team Settings Panel", 
+                "&7Status: Configurations",
+                "",
+                "&fFriendly Fire: " + (team.isFriendlyFireEnabled() ? "&aON" : "&cOFF"),
+                "",
+                "&a▶ Click to manage rules and toggles"
+            ));
+        }
+
+        // Leave Option (Slot 18 by default)
+        int leaveSlot = getMenuSlot("main", "leave-slot", 18, size);
+        if (leaveSlot >= 0 && leaveSlot < size) {
+            inv.setItem(leaveSlot, createGuiItem(Material.RED_TULIP,
+                "&#FF3333Leave Team Option",
+                "&7Abandon or quit this team.",
+                "",
+                "&c▶ Click to LEAVE the team safely"
+            ));
+        }
 
         player.openInventory(inv);
     }
@@ -384,68 +516,157 @@ public class TeamGUIManager {
      * Creates and opens the Team Bank sub-menu (Menu: bank)
      */
     public void openBankMenu(Player player, Team team) {
-        String title = plugin.colorize("&#FFCC00&lTeam Bank &7» &fDeposit/Withdraw");
+        String title = getMenuTitle("bank", "&#FFCC00&lTeam Bank &7» &fDeposit/Withdraw");
+        int size = getMenuSize("bank", 27);
         TeamGUIHolder holder = new TeamGUIHolder("bank", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
+        Inventory inv = Bukkit.createInventory(holder, size, title);
 
         // Fill background with decorative panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < size; i++) {
             inv.setItem(i, marker);
         }
 
-        // Slot 10: Deposit $100
-        inv.setItem(10, createGuiItem(Material.EMERALD, 
-            "&#00FF99&lDeposit $100.00", 
-            "&7Directly deposit $100.00 from your hand.",
-            "",
-            "&e▶ Click to deposit $100"
-        ));
+        // Deposit $100
+        int dep100Slot = getMenuSlot("bank", "deposit100-slot", 10, size);
+        if (dep100Slot >= 0 && dep100Slot < size) {
+            inv.setItem(dep100Slot, createGuiItem(Material.EMERALD, 
+                "&#00FF99&lDeposit $100.00", 
+                "&7Directly deposit $100.00 from your hand.",
+                "",
+                "&e▶ Click to deposit $100"
+            ));
+        }
 
-        // Slot 11: Custom Donation / Deposit (Writable Book)
-        inv.setItem(11, createGuiItem(Material.WRITABLE_BOOK, 
-            "&#00FFBC&lCustom Deposit / Donate", 
-            "&7Deposit or donate any custom amount.",
-            "&7Click here, then type the amount in chat.",
-            "",
-            "&e▶ Click to enter custom amount in chat"
-        ));
+        // Custom Donation / Deposit
+        int customDepSlot = getMenuSlot("bank", "customdeposit-slot", 11, size);
+        if (customDepSlot >= 0 && customDepSlot < size) {
+            inv.setItem(customDepSlot, createGuiItem(Material.WRITABLE_BOOK, 
+                "&#00FFBC&lCustom Deposit / Donate", 
+                "&7Deposit or donate any custom amount.",
+                "&7Click here, then type the amount in chat.",
+                "",
+                "&e▶ Click to enter custom amount in chat"
+            ));
+        }
 
-        // Slot 13: Gold Block of current ledger info
-        inv.setItem(13, createGuiItem(Material.GOLD_BLOCK, 
-            "&#FFCC00&lAccount Balance Info", 
-            "&7Bank details & interest stats",
-            "",
-            "&fLEDGER: &e$" + String.format("%,.2f", team.getBankBalance()),
-            "&fInterest Rate: &b" + plugin.getConfig().getDouble("team-bank.interest-rate", 5.0) + "% accrual",
-            "&fMax Accrual Cap: &b$" + plugin.getConfig().getDouble("team-bank.max-accrual", 15.0),
-            ""
-        ));
+        // Ledger info
+        int ledgerSlot = getMenuSlot("bank", "ledger-slot", 13, size);
+        if (ledgerSlot >= 0 && ledgerSlot < size) {
+            inv.setItem(ledgerSlot, createGuiItem(Material.GOLD_BLOCK, 
+                "&#FFCC00&lAccount Balance Info", 
+                "&7Bank details & interest stats",
+                "",
+                "&fLEDGER: &e$" + String.format("%,.2f", team.getBankBalance()),
+                "&fInterest Rate: &b" + plugin.getConfig().getDouble("team-bank.interest-rate", 5.0) + "% accrual",
+                "&fMax Accrual Cap: &b$" + plugin.getConfig().getDouble("team-bank.max-accrual", 15.0),
+                ""
+            ));
+        }
 
-        // Slot 15: Custom Withdraw (Redstone)
-        inv.setItem(15, createGuiItem(Material.REDSTONE, 
-            "&#FF3366&lCustom Withdraw", 
-            "&7Withdraw any custom amount of money.",
-            "&7Click here, then type the amount in chat.",
-            "&7&o(Admins/Owner Only)",
-            "",
-            "&c▶ Click to enter withdrawal amount in chat"
-        ));
+        // Transaction History button
+        int historySlot = getMenuSlot("bank", "history-slot", 12, size);
+        if (historySlot >= 0 && historySlot < size) {
+            inv.setItem(historySlot, createGuiItem(Material.BOOK, 
+                "&#00FFBB&lTransaction History", 
+                "&7View detailed logs of team transactions.",
+                "&7Lists last 10 deposits and withdrawals.",
+                "",
+                "&e▶ Click to view bank ledger history"
+            ));
+        }
 
-        // Slot 16: Withdraw $100
-        inv.setItem(16, createGuiItem(Material.ANVIL, 
-            "&#FF3333&lWithdraw $100.00", 
-            "&7Directly withdraw $100.00 from the vault.",
-            "&7&o(Admins/Owner Only)",
-            "",
-            "&c▶ Click to withdraw $100"
-        ));
+        // Custom Withdraw
+        int customWithSlot = getMenuSlot("bank", "customwithdraw-slot", 15, size);
+        if (customWithSlot >= 0 && customWithSlot < size) {
+            inv.setItem(customWithSlot, createGuiItem(Material.REDSTONE, 
+                "&#FF3366&lCustom Withdraw", 
+                "&7Withdraw any custom amount of money.",
+                "&7Click here, then type the amount in chat.",
+                "&7&o(Admins/Owner Only)",
+                "",
+                "&c▶ Click to enter withdrawal amount in chat"
+            ));
+        }
 
-        // Slot 22: Go back Arrow
-        inv.setItem(22, createGuiItem(Material.ARROW, 
-            "&e&l◀ Return to Dashboard", 
-            "&7Go back to main team GUI panel"
-        ));
+        // Withdraw $100
+        int with100Slot = getMenuSlot("bank", "withdraw100-slot", 16, size);
+        if (with100Slot >= 0 && with100Slot < size) {
+            inv.setItem(with100Slot, createGuiItem(Material.ANVIL, 
+                "&#FF3333&lWithdraw $100.00", 
+                "&7Directly withdraw $100.00 from the vault.",
+                "&7&o(Admins/Owner Only)",
+                "",
+                "&c▶ Click to withdraw $100"
+            ));
+        }
+
+        // Return Arrow
+        int backSlot = getMenuSlot("bank", "back-slot", 22, size);
+        if (backSlot >= 0 && backSlot < size) {
+            inv.setItem(backSlot, createGuiItem(Material.ARROW, 
+                "&e&l◀ Return to Dashboard", 
+                "&7Go back to main team GUI panel"
+            ));
+        }
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Creates and opens the Bank Transaction History sub-menu (Menu: bank_history)
+     */
+    public void openBankHistoryMenu(Player player, Team team) {
+        String title = getMenuTitle("bank_history", "&#FFCC00&lTransaction History", team);
+        int size = getMenuSize("bank_history", 27);
+        TeamGUIHolder holder = new TeamGUIHolder("bank_history", team.getName());
+        Inventory inv = Bukkit.createInventory(holder, size, title);
+
+        // Fill background with decorative panes
+        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
+        for (int i = 0; i < size; i++) {
+            inv.setItem(i, marker);
+        }
+
+        // Get last 10 transactions
+        List<com.ourteam.model.TeamTransaction> transactions = team.getBankTransactions();
+        int maxLogs = Math.min(10, transactions.size());
+
+        int startSlot = getMenuSlot("bank_history", "history-start-slot", 9, size);
+
+        // Lay them out starting from startSlot
+        for (int i = 0; i < maxLogs; i++) {
+            int currentSlot = startSlot + i;
+            if (currentSlot >= size || currentSlot < 0) {
+                break;
+            }
+            com.ourteam.model.TeamTransaction tx = transactions.get(i);
+            
+            // Format nice relative or absolute timestamp
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            String dateFormatted = sdf.format(new java.util.Date(tx.getTimestamp()));
+
+            Material txMat = "DEPOSIT".equalsIgnoreCase(tx.getType()) ? Material.LIME_DYE : Material.ORANGE_DYE;
+            String typePrefix = "DEPOSIT".equalsIgnoreCase(tx.getType()) ? "&#00FF66&lDEPOSIT" : "&#FF3355&lWITHDRAWAL";
+            String lorePrefix = "DEPOSIT".equalsIgnoreCase(tx.getType()) ? "&7Deposited &a$" : "&7Withdrew &c$";
+
+            inv.setItem(currentSlot, createGuiItem(txMat, 
+                "&e&lTransaction #" + (transactions.size() - i),
+                "&7Initiated by: &f" + tx.getPlayerName(),
+                "&7Transaction Type: " + typePrefix,
+                lorePrefix + String.format("%,.2f", tx.getAmount()),
+                "&7Timestamp: &b" + dateFormatted
+            ));
+        }
+
+        // Back button
+        int backSlot = getMenuSlot("bank_history", "back-slot", 22, size);
+        if (backSlot >= 0 && backSlot < size) {
+            inv.setItem(backSlot, createGuiItem(Material.ARROW, 
+                "&e&l◀ Return to Bank Menu", 
+                "&7Go back to team bank controls"
+            ));
+        }
 
         player.openInventory(inv);
     }
@@ -684,36 +905,54 @@ public class TeamGUIManager {
      * Creates and opens the Team Leaderboard GUI (Menu: leaderboard)
      */
     public void openLeaderboardMenu(Player player, Team viewerTeam) {
-        String title = plugin.colorize("&#33CCFFLeaderboard &7- &#A9C9FFTop Teams");
-        TeamGUIHolder holder = new TeamGUIHolder("leaderboard", viewerTeam.getName());
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
+        String title = getMenuTitle("leaderboard", "&#33CCFFLeaderboard &7- &#A9C9FFTop Teams", viewerTeam);
+        int size = getMenuSize("leaderboard", 54);
+        TeamGUIHolder holder = new TeamGUIHolder("leaderboard", viewerTeam != null ? viewerTeam.getName() : "none");
+        Inventory inv = Bukkit.createInventory(holder, size, title);
 
         // Fill background with decorative panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
         for (int i = 0; i < 9; i++) {
-            inv.setItem(i, marker);
+            if (i < size) {
+                inv.setItem(i, marker);
+            }
         }
-        for (int i = 45; i < 54; i++) {
-            inv.setItem(i, marker);
+        for (int i = size - 9; i < size; i++) {
+            if (i >= 0 && i < size) {
+                inv.setItem(i, marker);
+            }
         }
 
-        // Slot 4: Info marker of current viewer's team
-        viewerTeam.recalculateScore(plugin);
-        int vRank = viewerTeam.getRankPosition(plugin);
-        int vScore = viewerTeam.getCachedScore();
-        int totalTeamsCount = plugin.getTeamManager().getAllTeams().size();
+        // Info plaque
+        int plaqueSlot = getMenuSlot("leaderboard", "plaque-slot", 4, size);
+        if (plaqueSlot >= 0 && plaqueSlot < size) {
+            if (viewerTeam != null) {
+                viewerTeam.recalculateScore(plugin);
+                int vRank = viewerTeam.getRankPosition(plugin);
+                int vScore = viewerTeam.getCachedScore();
+                int totalTeamsCount = plugin.getTeamManager().getAllTeams().size();
 
-        inv.setItem(4, createGuiItem(Material.NETHER_STAR,
-            "&#33CCFFYour Team Standing",
-            "&7Core competitive evaluation",
-            "",
-            "&fTeam Profile: &e" + viewerTeam.getName(),
-            "&fLeaderboard Rank: &#FFCC00#" + vRank + " &7of &f" + totalTeamsCount,
-            "&fTeam Score: &a" + vScore + " Points",
-            "",
-            "&7Scores update dynamically based on members,",
-            "&7bank content, and grinding activities."
-        ));
+                inv.setItem(plaqueSlot, createGuiItem(Material.NETHER_STAR,
+                    "&#33CCFFYour Team Standing",
+                    "&7Core competitive evaluation",
+                    "",
+                    "&fTeam Profile: &e" + viewerTeam.getName(),
+                    "&fLeaderboard Rank: &#FFCC00#" + vRank + " &7of &f" + totalTeamsCount,
+                    "&fTeam Score: &a" + vScore + " Points",
+                    "",
+                    "&7Scores update dynamically based on members,",
+                    "&7bank content, and grinding activities."
+                ));
+            } else {
+                inv.setItem(plaqueSlot, createGuiItem(Material.NETHER_STAR,
+                    "&#33CCFFYour Team Standing",
+                    "&7Core competitive evaluation",
+                    "",
+                    "&cYou are not in a team.",
+                    "&7Join or create a team to compete on the leaderboards!"
+                ));
+            }
+        }
 
         // Let's sort the teams from highest to lowest score
         java.util.List<Team> sorted = new java.util.ArrayList<>(plugin.getTeamManager().getAllTeams());
@@ -722,11 +961,16 @@ public class TeamGUIManager {
         }
         sorted.sort((t1, t2) -> Integer.compare(t2.getCachedScore(), t1.getCachedScore()));
 
-        // Let's populate the active teams in slots 9-44
-        int limit = Math.min(36, sorted.size());
-        for (int i = 0; i < limit; i++) {
+        // Let's populate the active teams dynamically
+        int listStart = getMenuSlot("leaderboard", "list-start", 9, size);
+        int listEnd = getMenuSlot("leaderboard", "list-end", 44, size);
+        int limit = Math.max(0, listEnd - listStart + 1);
+        int teamsToShow = Math.min(limit, sorted.size());
+
+        for (int i = 0; i < teamsToShow; i++) {
             Team currentTeam = sorted.get(i);
-            int slotIdx = 9 + i;
+            int slotIdx = listStart + i;
+            if (slotIdx > listEnd || slotIdx >= size) break;
 
             org.bukkit.OfflinePlayer owner = Bukkit.getOfflinePlayer(currentTeam.getOwner());
             String ownerName = owner.getName() != null ? owner.getName() : "Unknown Owner";
@@ -748,11 +992,14 @@ public class TeamGUIManager {
             ));
         }
 
-        // Slot 49: Go back Arrow
-        inv.setItem(49, createGuiItem(Material.ARROW,
-            "&e◀ Return to Dashboard",
-            "&7Go back to main team GUI panel"
-        ));
+        // Return Arrow (Standard slot is size - 5, matching 49 if size is 54)
+        int backSlot = getMenuSlot("leaderboard", "back-slot", size - 5, size);
+        if (backSlot >= 0 && backSlot < size) {
+            inv.setItem(backSlot, createGuiItem(Material.ARROW,
+                "&e◀ Return to Dashboard",
+                "&7Go back to previous menu"
+            ));
+        }
 
         player.openInventory(inv);
     }
@@ -815,43 +1062,65 @@ public class TeamGUIManager {
      * Creates and opens the Teams List GUI (Menu: teams_list)
      */
     public void openTeamsListMenu(Player player) {
-        String title = plugin.colorize("&#33CCFF&lALL ACTIVE TEAMS");
         Team viewerTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        String title = getMenuTitle("list", "&#33CCFF&lALL ACTIVE TEAMS", viewerTeam);
+        int size = getMenuSize("list", 54);
         String tName = viewerTeam != null ? viewerTeam.getName() : "none";
         TeamGUIHolder holder = new TeamGUIHolder("list", tName);
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
+        Inventory inv = Bukkit.createInventory(holder, size, title);
 
         // Fill top and bottom with decorative glass panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
         for (int i = 0; i < 9; i++) {
-            inv.setItem(i, marker);
+            if (i < size) {
+                inv.setItem(i, marker);
+            }
         }
-        for (int i = 45; i < 54; i++) {
-            inv.setItem(i, marker);
+        for (int i = size - 9; i < size; i++) {
+            if (i >= 0 && i < size) {
+                inv.setItem(i, marker);
+            }
         }
 
-        // Slot 4: Info book
-        inv.setItem(4, createGuiItem(Material.BOOK,
-            "&#33CCFF&lOurTeam Guilds Directory",
-            "&7A directory of all active groups.",
-            "",
-            "&f💡 &bLeft/Right click &7on any team item",
-            "   &7to directly transmit a Join Request!",
-            "",
-            "&f💡 &7Pending requests can be approved",
-            "   &7by that team's moderators/owner."
-        ));
+        // Info book plaque
+        int infoSlot = getMenuSlot("list", "info-slot", 4, size);
+        if (infoSlot >= 0 && infoSlot < size) {
+            inv.setItem(infoSlot, createGuiItem(Material.BOOK,
+                "&#33CCFF&lOurTeam Guilds Directory",
+                "&7A directory of all active groups.",
+                "",
+                "&f💡 &bLeft/Right click &7on any team item",
+                "   &7to directly transmit a Join Request!",
+                "",
+                "&f💡 &7Pending requests can be approved",
+                "   &7by that team's moderators/owner."
+            ));
+        }
 
-        // Slot 49: Close barrier
-        inv.setItem(49, createGuiItem(Material.BARRIER,
-            "&c&lClose Menu",
-            "&7Return to game"
-        ));
+        // Return button (Close Menu / Go back)
+        int backSlot = getMenuSlot("list", "back-slot", size - 5, size);
+        if (backSlot >= 0 && backSlot < size) {
+            if (viewerTeam == null) {
+                inv.setItem(backSlot, createGuiItem(Material.ARROW,
+                    "&e◀ Return to Discovery",
+                    "&7Go back to Team Hub"
+                ));
+            } else {
+                inv.setItem(backSlot, createGuiItem(Material.BARRIER,
+                    "&c&lClose Menu",
+                    "&7Return to game"
+                ));
+            }
+        }
 
-        // Let's populate the active teams in the grid slots (9 to 44)
-        int slotIdx = 9;
+        // Let's populate the active teams in the grid slots dynamically
+        int listStart = getMenuSlot("list", "list-start", 9, size);
+        int listEnd = getMenuSlot("list", "list-end", 44, size);
+        int limit = Math.max(0, listEnd - listStart + 1);
+
+        int slotIdx = listStart;
         for (Team team : plugin.getTeamManager().getAllTeams()) {
-            if (slotIdx > 44) break; // limit to 36 teams per page to stay in grid
+            if (slotIdx > listEnd || slotIdx >= size) break;
 
             org.bukkit.OfflinePlayer owner = Bukkit.getOfflinePlayer(team.getOwner());
             String ownerName = owner.getName() != null ? owner.getName() : "Unknown";
@@ -878,43 +1147,53 @@ public class TeamGUIManager {
      * Creates and opens the No Team / Creation Hub GUI (Menu: noteam)
      */
     public void openNoTeamMenu(Player player) {
-        String title = plugin.colorize("&#33CCFFTeam Hub &7» &fDiscovery");
+        String title = getMenuTitle("noteam", "&#33CCFFTeam Hub &7» &fDiscovery");
+        int size = getMenuSize("noteam", 27);
         TeamGUIHolder holder = new TeamGUIHolder("noteam", "none");
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
+        Inventory inv = Bukkit.createInventory(holder, size, title);
 
         // Fill background with decorative panes
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < size; i++) {
             inv.setItem(i, marker);
         }
 
-        // Slot 11: Create a New Team
-        inv.setItem(11, createGuiItem(Material.GRASS_BLOCK,
-            "&#33CCFF&lCreate a New Team",
-            "&7Form an organization to pool your efforts,",
-            "&7protect your lands, trade with bank interest,",
-            "&7and conquer team leaderboards!",
-            "",
-            "&a▶ Click to start creation process"
-        ));
+        // Slot: Create a New Team
+        int createSlot = getMenuSlot("noteam", "create-slot", 11, size);
+        if (createSlot >= 0 && createSlot < size) {
+            inv.setItem(createSlot, createGuiItem(Material.GRASS_BLOCK,
+                "&#33CCFF&lCreate a New Team",
+                "&7Form an organization to pool your efforts,",
+                "&7protect your lands, trade with bank interest,",
+                "&7and conquer team leaderboards!",
+                "",
+                "&a▶ Click to start creation process"
+            ));
+        }
 
-        // Slot 13: View Active Teams Directory
-        inv.setItem(13, createGuiItem(Material.BOOK,
-            "&#FFCC00&lActive Teams Directory",
-            "&7Expand your network! Look through all existing",
-            "&7teams, and submit a Join Request to join one.",
-            "",
-            "&e▶ Click to browse active teams"
-        ));
+        // Slot: View Active Teams Directory
+        int listSlot = getMenuSlot("noteam", "list-slot", 13, size);
+        if (listSlot >= 0 && listSlot < size) {
+            inv.setItem(listSlot, createGuiItem(Material.BOOK,
+                "&#FFCC00&lActive Teams Directory",
+                "&7Expand your network! Look through all existing",
+                "&7teams, and submit a Join Request to join one.",
+                "",
+                "&e▶ Click to browse active teams"
+            ));
+        }
 
-        // Slot 15: Your Received Invitations & Options
-        inv.setItem(15, createGuiItem(Material.PAPER,
-            "&#CC66FF&lYour Invitations",
-            "&7See teams that have invited you, or requests",
-            "&7that you have pending.",
-            "",
-            "&d▶ Click to view active invites"
-        ));
+        // Slot: Your Received Invitations & Options
+        int invitationsSlot = getMenuSlot("noteam", "invitations-slot", 15, size);
+        if (invitationsSlot >= 0 && invitationsSlot < size) {
+            inv.setItem(invitationsSlot, createGuiItem(Material.PAPER,
+                "&#CC66FF&lYour Invitations",
+                "&7See teams that have invited you, or requests",
+                "&7that you have pending.",
+                "",
+                "&d▶ Click to view active invites"
+            ));
+        }
 
         player.openInventory(inv);
     }
