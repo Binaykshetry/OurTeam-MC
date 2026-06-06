@@ -344,15 +344,14 @@ public class GUIListener implements Listener {
                 }
                 if (plugin.getEconomy() != null) {
                     if (plugin.getEconomy().has(player, 100)) {
-                        net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().withdrawPlayer(player, 100);
-                        if (response.transactionSuccess()) {
+                        if (plugin.withdrawMoney(player, 100)) {
                             team.addBankBalance(100);
                             team.addMemberDeposit(player.getUniqueId(), 100);
                             team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", 100.0);
                             plugin.getTeamManager().saveTeam(team);
                             player.sendMessage(plugin.colorize("&a&l[Bank] &fDeposited &e$100.00 &fto team bank from your account!"));
                         } else {
-                            player.sendMessage(plugin.colorize("&cError: Deposit failed! " + response.errorMessage));
+                            player.sendMessage(plugin.colorize("&cError: Deposit failed! Transaction could not be completed."));
                         }
                     } else {
                         player.sendMessage(plugin.colorize("&c&l[Bank] &fYou do not have enough funds ($100.00) in your wallet."));
@@ -392,14 +391,13 @@ public class GUIListener implements Listener {
                 }
                 if (team.getBankBalance() >= 100) {
                     if (plugin.getEconomy() != null) {
-                        net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, 100);
-                        if (response.transactionSuccess()) {
+                        if (plugin.depositMoney(player, 100)) {
                             team.removeBankBalance(100);
                             team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", 100.0);
                             plugin.getTeamManager().saveTeam(team);
                             player.sendMessage(plugin.colorize("&a&l[Bank] &fWithdrew &e$100.00 &ffrom team bank to your wallet."));
                         } else {
-                            player.sendMessage(plugin.colorize("&cError: Withdrawal failed! " + response.errorMessage));
+                            player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Transaction could not be completed."));
                         }
                     } else {
                         // Simulated Withdraw
@@ -520,7 +518,14 @@ public class GUIListener implements Listener {
             org.bukkit.OfflinePlayer targetPlayer = org.bukkit.Bukkit.getOfflinePlayer(targetUuid);
             String targetName = targetPlayer.getName() != null ? targetPlayer.getName() : "Player";
 
-            if (slot == 22) {
+            int maxSlot = plugin.getGuiManager().getMenuSize("member_detail", 27);
+            int backSlot = plugin.getGuiManager().getMenuSlot("member_detail", "back-slot", 22, maxSlot);
+            int adminSlot = plugin.getGuiManager().getMenuSlot("member_detail", "role-admin-slot", 10, maxSlot);
+            int modSlot = plugin.getGuiManager().getMenuSlot("member_detail", "role-mod-slot", 11, maxSlot);
+            int memberSlot = plugin.getGuiManager().getMenuSlot("member_detail", "role-member-slot", 15, maxSlot);
+            int kickSlot = plugin.getGuiManager().getMenuSlot("member_detail", "kick-slot", 16, maxSlot);
+
+            if (slot == backSlot) {
                 plugin.getGuiManager().openMembersMenu(player, team);
                 return;
             }
@@ -536,51 +541,43 @@ public class GUIListener implements Listener {
                 return;
             }
 
-            switch (slot) {
-                case 10: // Set ADMIN
-                    team.getRoles().put(targetUuid.toString(), "ADMIN");
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&a[Roster] &b" + targetName + " &fhas been set to &b&lADMIN&f!"));
-                    Player tgtAdmin = org.bukkit.Bukkit.getPlayer(targetUuid);
-                    if (tgtAdmin != null) {
-                        tgtAdmin.sendMessage(plugin.colorize("&a[OurTeam] &fYou have been set to &b&lADMIN &fof your team!"));
-                    }
-                    plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
-                    break;
-
-                case 11: // Set MODERATOR
-                    team.getRoles().put(targetUuid.toString(), "MODERATOR");
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&a[Roster] &e" + targetName + " &fhas been set to &e&lMODERATOR&f!"));
-                    Player tgtMod = org.bukkit.Bukkit.getPlayer(targetUuid);
-                    if (tgtMod != null) {
-                        tgtMod.sendMessage(plugin.colorize("&a[OurTeam] &fYou have been set to &e&lMODERATOR &fof your team!"));
-                    }
-                    plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
-                    break;
-
-                case 15: // Set MEMBER
-                    team.getRoles().remove(targetUuid.toString());
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&a[Roster] &e" + targetName + " &fhas been set to &7&lMEMBER&f!"));
-                    Player tgtMem = org.bukkit.Bukkit.getPlayer(targetUuid);
-                    if (tgtMem != null) {
-                        tgtMem.sendMessage(plugin.colorize("&a[OurTeam] &fYours role has been changed to &7&lMEMBER&f of your team."));
-                    }
-                    plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
-                    break;
-
-                case 16: // Kick member
-                    team.removeMember(targetUuid);
-                    team.getRoles().remove(targetUuid.toString());
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&c[Kick] &e" + targetName + " &fhas been kicked from the team!"));
-                    Player tgtKick = org.bukkit.Bukkit.getPlayer(targetUuid);
-                    if (tgtKick != null) {
-                        tgtKick.sendMessage(plugin.colorize("&c[OurTeam] &fYou have been kicked from your team."));
-                    }
-                    plugin.getGuiManager().openMembersMenu(player, team);
-                    break;
+            if (slot == adminSlot) {
+                team.getRoles().put(targetUuid.toString(), "ADMIN");
+                plugin.getTeamManager().saveTeam(team);
+                player.sendMessage(plugin.colorize("&a[Roster] &b" + targetName + " &fhas been set to &b&lADMIN&f!"));
+                Player tgtAdmin = org.bukkit.Bukkit.getPlayer(targetUuid);
+                if (tgtAdmin != null) {
+                    tgtAdmin.sendMessage(plugin.colorize("&a[OurTeam] &fYou have been set to &b&lADMIN &fof your team!"));
+                }
+                plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
+            } else if (slot == modSlot) {
+                team.getRoles().put(targetUuid.toString(), "MODERATOR");
+                plugin.getTeamManager().saveTeam(team);
+                player.sendMessage(plugin.colorize("&a[Roster] &e" + targetName + " &fhas been set to &e&lMODERATOR&f!"));
+                Player tgtMod = org.bukkit.Bukkit.getPlayer(targetUuid);
+                if (tgtMod != null) {
+                    tgtMod.sendMessage(plugin.colorize("&a[OurTeam] &fYou have been set to &e&lMODERATOR &fof your team!"));
+                }
+                plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
+            } else if (slot == memberSlot) {
+                team.getRoles().remove(targetUuid.toString());
+                plugin.getTeamManager().saveTeam(team);
+                player.sendMessage(plugin.colorize("&a[Roster] &e" + targetName + " &fhas been set to &7&lMEMBER&f!"));
+                Player tgtMem = org.bukkit.Bukkit.getPlayer(targetUuid);
+                if (tgtMem != null) {
+                    tgtMem.sendMessage(plugin.colorize("&a[OurTeam] &fYours role has been changed to &7&lMEMBER&f of your team."));
+                }
+                plugin.getGuiManager().openMemberDetailMenu(player, team, targetPlayer);
+            } else if (slot == kickSlot) {
+                team.removeMember(targetUuid);
+                team.getRoles().remove(targetUuid.toString());
+                plugin.getTeamManager().saveTeam(team);
+                player.sendMessage(plugin.colorize("&c[Kick] &e" + targetName + " &fhas been kicked from the team!"));
+                Player tgtKick = org.bukkit.Bukkit.getPlayer(targetUuid);
+                if (tgtKick != null) {
+                    tgtKick.sendMessage(plugin.colorize("&c[OurTeam] &fYou have been kicked from your team."));
+                }
+                plugin.getGuiManager().openMembersMenu(player, team);
             }
         }
 

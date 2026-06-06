@@ -241,6 +241,24 @@ public final class OurTeam extends JavaPlugin {
         return econ;
     }
 
+    public boolean depositMoney(Player player, double amount) {
+        if (econ == null) return false;
+        net.milkbowl.vault.economy.EconomyResponse res = econ.depositPlayer(player.getName(), amount);
+        if (res == null || !res.transactionSuccess()) {
+            res = econ.depositPlayer(player, amount);
+        }
+        return res != null && res.transactionSuccess();
+    }
+
+    public boolean withdrawMoney(Player player, double amount) {
+        if (econ == null) return false;
+        net.milkbowl.vault.economy.EconomyResponse res = econ.withdrawPlayer(player.getName(), amount);
+        if (res == null || !res.transactionSuccess()) {
+            res = econ.withdrawPlayer(player, amount);
+        }
+        return res != null && res.transactionSuccess();
+    }
+
     public java.util.Map<java.util.UUID, String> getActiveBankAction() {
         return activeBankAction;
     }

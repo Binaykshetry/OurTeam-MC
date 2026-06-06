@@ -796,13 +796,14 @@ public class TeamGUIManager {
      * Opens a sub-menu showing detailed statistics and actions for a specific team member.
      */
     public void openMemberDetailMenu(Player viewer, Team team, org.bukkit.OfflinePlayer target) {
-        String title = plugin.colorize("&#33CCFFMember Detail &7» &f" + target.getName());
+        String title = getMenuTitle("member_detail", "&#CC66FFMember Options &7» &f{target}", "{target}", target.getName());
+        int size = getMenuSize("member_detail", 27);
         TeamGUIHolder holder = new TeamGUIHolder("member_detail:" + target.getUniqueId().toString(), team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 27, title);
+        Inventory inv = Bukkit.createInventory(holder, size, title);
 
         // Background decoration
         ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 27; i++) {
+        for (int i = 0; i < size; i++) {
             inv.setItem(i, marker);
         }
 
@@ -822,77 +823,104 @@ public class TeamGUIManager {
         long minutes = (mPlaytimeMs % 3600000L) / 60000L;
         String formattedPlaytime = hours + "h " + minutes + "m";
 
-        inv.setItem(13, createMemberSkullItem(target, "&#33CCFF" + target.getName(),
-            "&7Status details for this member",
-            "",
-            "&f⚡ Role: &#FFCC00" + team.getRole(target.getUniqueId()),
-            "&f⚡ Server Joined: &e" + serverJoinDate,
-            "&f⚡ Team Joined: &b" + teamJoinDate,
-            "&f⚡ Kills since joining: &a" + mKills,
-            "&f⚡ Deaths since joining: &c" + mDeaths,
-            "&f⚡ Playtime in team: &e" + formattedPlaytime,
-            "&f⚡ Total Donated/Deposited: &a$" + String.format("%,.2f", totalDeposited),
-            "",
-            "&f⚡ UUID: &7" + target.getUniqueId().toString()
-        ));
+        int infoSlot = getMenuSlot("member_detail", "info-slot", 13, size);
+        if (infoSlot >= 0 && infoSlot < size) {
+            inv.setItem(infoSlot, createMemberSkullItem(target, "&#33CCFF" + target.getName(),
+                "&7Status details for this member",
+                "",
+                "&f⚡ Role: &#FFCC00" + team.getRole(target.getUniqueId()),
+                "&f⚡ Server Joined: &e" + serverJoinDate,
+                "&f⚡ Team Joined: &b" + teamJoinDate,
+                "&f⚡ Kills since joining: &a" + mKills,
+                "&f⚡ Deaths since joining: &c" + mDeaths,
+                "&f⚡ Playtime in team: &e" + formattedPlaytime,
+                "&f⚡ Total Donated/Deposited: &a$" + String.format("%,.2f", totalDeposited),
+                "",
+                "&f⚡ UUID: &7" + target.getUniqueId().toString()
+            ));
+        }
 
         // Rank management permissions check
         boolean canManage = (team.isAdminOrHigher(viewer.getUniqueId()) || viewer.isOp() || viewer.hasPermission("ourteam.admin"))
                 && !target.getUniqueId().equals(viewer.getUniqueId())
                 && !target.getUniqueId().equals(team.getOwner());
 
+        int roleAdminSlot = getMenuSlot("member_detail", "role-admin-slot", 10, size);
+        int roleModSlot = getMenuSlot("member_detail", "role-mod-slot", 11, size);
+        int roleMemberSlot = getMenuSlot("member_detail", "role-member-slot", 15, size);
+        int kickSlot = getMenuSlot("member_detail", "kick-slot", 16, size);
+
         if (canManage) {
-            // Slot 10: Allocate ADMIN
-            inv.setItem(10, createGuiItem(Material.GOLD_BLOCK,
-                "&#33CCFFSet ADMIN Role",
-                "&7Grants full administrator privileges.",
-                "&fCan manage warps, structures, settings,",
-                "&fpermissions, and lower ranks.",
-                "",
-                "&a▶ Click to allocate ADMIN rank"
-            ));
+            // ADMIN Role Item
+            if (roleAdminSlot >= 0 && roleAdminSlot < size) {
+                inv.setItem(roleAdminSlot, createGuiItem(Material.GOLD_BLOCK,
+                    "&#33CCFFSet ADMIN Role",
+                    "&7Grants full administrator privileges.",
+                    "&fCan manage warps, structures, settings,",
+                    "&fpermissions, and lower ranks.",
+                    "",
+                    "&a▶ Click to allocate ADMIN rank"
+                ));
+            }
 
-            // Slot 11: Allocate MODERATOR
-            inv.setItem(11, createGuiItem(Material.IRON_BLOCK,
-                "&#FFCC00Set MODERATOR Role",
-                "&7Grants group moderator rights.",
-                "&fCan initiate invites, accept pending",
-                "&fjoining applications, and toggle chat.",
-                "",
-                "&a▶ Click to allocate MODERATOR rank"
-            ));
+            // MODERATOR Role Item
+            if (roleModSlot >= 0 && roleModSlot < size) {
+                inv.setItem(roleModSlot, createGuiItem(Material.IRON_BLOCK,
+                    "&#FFCC00Set MODERATOR Role",
+                    "&7Grants group moderator rights.",
+                    "&fCan initiate invites, accept pending",
+                    "&fjoining applications, and toggle chat.",
+                    "",
+                    "&a▶ Click to allocate MODERATOR rank"
+                ));
+            }
 
-            // Slot 15: Allocate MEMBER
-            inv.setItem(15, createGuiItem(Material.COAL_BLOCK,
-                "&#E0E0E0Set MEMBER Role",
-                "&7Resets status back to basic Member.",
-                "&fRemoves all administrative command",
-                "&frights and privileges.",
-                "",
-                "&a▶ Click to allocate MEMBER rank"
-            ));
+            // MEMBER Role Item
+            if (roleMemberSlot >= 0 && roleMemberSlot < size) {
+                inv.setItem(roleMemberSlot, createGuiItem(Material.COAL_BLOCK,
+                    "&#E0E0E0Set MEMBER Role",
+                    "&7Resets status back to basic Member.",
+                    "&fRemoves all administrative command",
+                    "&frights and privileges.",
+                    "",
+                    "&a▶ Click to allocate MEMBER rank"
+                ));
+            }
 
-            // Slot 16: Kick option
-            inv.setItem(16, createGuiItem(Material.LAVA_BUCKET,
-                "&#FF3333Kick from Team",
-                "&7Terminates roster membership.",
-                "&fRemoves player completely from the",
-                "&fteam roster.",
-                "",
-                "&c▶ Click to KICK member"
-            ));
+            // Kick Item
+            if (kickSlot >= 0 && kickSlot < size) {
+                inv.setItem(kickSlot, createGuiItem(Material.LAVA_BUCKET,
+                    "&#FF3333Kick from Team",
+                    "&7Terminates roster membership.",
+                    "&fRemoves player completely from the",
+                    "&fteam roster.",
+                    "",
+                    "&c▶ Click to KICK member"
+                ));
+            }
         } else {
-            inv.setItem(10, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
-            inv.setItem(11, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
-            inv.setItem(15, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
-            inv.setItem(16, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
+            if (roleAdminSlot >= 0 && roleAdminSlot < size) {
+                inv.setItem(roleAdminSlot, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
+            }
+            if (roleModSlot >= 0 && roleModSlot < size) {
+                inv.setItem(roleModSlot, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
+            }
+            if (roleMemberSlot >= 0 && roleMemberSlot < size) {
+                inv.setItem(roleMemberSlot, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
+            }
+            if (kickSlot >= 0 && kickSlot < size) {
+                inv.setItem(kickSlot, createGuiItem(Material.BARRIER, "&7Unavailable", "&cYou cannot manage this player."));
+            }
         }
 
-        // Slot 22: Go back
-        inv.setItem(22, createGuiItem(Material.ARROW,
-            "&e◀ Return to Members Roster",
-            "&7Go back to roster menu"
-        ));
+        // Go back
+        int backSlot = getMenuSlot("member_detail", "back-slot", 22, size);
+        if (backSlot >= 0 && backSlot < size) {
+            inv.setItem(backSlot, createGuiItem(Material.ARROW,
+                "&e◀ Return to Members Roster",
+                "&7Go back to roster menu"
+            ));
+        }
 
         viewer.openInventory(inv);
     }

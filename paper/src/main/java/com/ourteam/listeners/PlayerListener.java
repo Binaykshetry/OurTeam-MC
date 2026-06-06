@@ -313,15 +313,14 @@ public class PlayerListener implements Listener {
                 player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", pBalance) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
                 return;
             }
-            net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().withdrawPlayer(player, amount);
-            if (response.transactionSuccess()) {
+            if (plugin.withdrawMoney(player, amount)) {
                 team.addBankBalance(amount);
                 team.addMemberDeposit(player.getUniqueId(), amount);
                 team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
                 plugin.getTeamManager().saveTeam(team);
                 player.sendMessage(plugin.colorize("&a[Bank] Deposited &e$" + String.format("%,.0f", amount) + " &ainto team bank!"));
             } else {
-                player.sendMessage(plugin.colorize("&cError: Deposit failed! Reason: " + response.errorMessage));
+                player.sendMessage(plugin.colorize("&cError: Deposit failed! Transaction could not be completed."));
             }
         } else {
             if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
@@ -333,15 +332,14 @@ public class PlayerListener implements Listener {
                 player.sendMessage(plugin.colorize("&cError: Team bank only has $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
                 return;
             }
-            if (team.removeBankBalance(amount)) {
-                net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, amount);
-                if (response.transactionSuccess()) {
+            if (team.getBankBalance() >= amount) {
+                if (plugin.depositMoney(player, amount)) {
+                    team.removeBankBalance(amount);
                     team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
                     plugin.getTeamManager().saveTeam(team);
                     player.sendMessage(plugin.colorize("&a[Bank] Withdrew &e$" + String.format("%,.0f", amount) + " &afrom team bank!"));
                 } else {
-                    team.addBankBalance(amount); // refund
-                    player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Reason: " + response.errorMessage));
+                    player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Transaction could not be completed."));
                 }
             } else {
                 player.sendMessage(plugin.colorize("&cError: Could not deduct funds from the team bank."));
@@ -472,15 +470,14 @@ public class PlayerListener implements Listener {
                         player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", pBalance) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
                         return;
                     }
-                    net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().withdrawPlayer(player, amount);
-                    if (response.transactionSuccess()) {
+                    if (plugin.withdrawMoney(player, amount)) {
                         team.addBankBalance(amount);
                         team.addMemberDeposit(player.getUniqueId(), amount);
                         team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
                         plugin.getTeamManager().saveTeam(team);
                         player.sendMessage(plugin.colorize("&a[Bank] Custom deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
                     } else {
-                        player.sendMessage(plugin.colorize("&cError: Custom deposit failed! Reason: " + response.errorMessage));
+                        player.sendMessage(plugin.colorize("&cError: Custom deposit failed! Transaction could not be completed."));
                     }
                 } else if (action.equalsIgnoreCase("WITHDRAW")) {
                     if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
@@ -492,14 +489,13 @@ public class PlayerListener implements Listener {
                         player.sendMessage(plugin.colorize("&cError: Your team bank only holds $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
                         return;
                     }
-                    net.milkbowl.vault.economy.EconomyResponse response = plugin.getEconomy().depositPlayer(player, amount);
-                    if (response.transactionSuccess()) {
+                    if (plugin.depositMoney(player, amount)) {
                         team.removeBankBalance(amount);
                         team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
                         plugin.getTeamManager().saveTeam(team);
                         player.sendMessage(plugin.colorize("&a[Bank] Custom withdrew &e$" + String.format("%,.2f", amount) + " &afrom team bank!"));
                     } else {
-                        player.sendMessage(plugin.colorize("&cError: Custom withdrawal failed! Reason: " + response.errorMessage));
+                        player.sendMessage(plugin.colorize("&cError: Custom withdrawal failed! Transaction could not be completed."));
                     }
                 }
 
