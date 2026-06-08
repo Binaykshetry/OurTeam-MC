@@ -157,4 +157,104 @@ public class TeamManager {
             teamChatToggle.add(playerUuid);
         }
     }
+
+    private final Map<UUID, TransactionLock> teamLocks = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static class TransactionLock {
+        private final java.util.concurrent.locks.ReentrantLock lock = new java.util.concurrent.locks.ReentrantLock();
+
+        public boolean tryLock() {
+            return lock.tryLock();
+        }
+
+        public void unlock() {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+
+    public TransactionLock getTeamLock(UUID teamId) {
+        return teamLocks.computeIfAbsent(teamId, k -> new TransactionLock());
+    }
+
+    /**
+     * Attempts to deposit money into the team's bank.
+     * Uses a TransactionLock to prevent concurrent modifiers.
+     */
+    public boolean depositToBank(Player player, Team team, double amount) {
+        TransactionLock lock = getTeamLock(team.getId());
+        if (!lock.tryLock()) {
+            player.sendMessage(plugin.colorize("&c[Anti-Dupe] &7A transaction is already in progress for your team. This event has been canceled."));
+            return false;
+        }
+        try {
+            if (plugin.getEconomy() != null) {
+                if (!plugin.getEconomy().has(player, amount)) {
+                    player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", plugin.getEconomy().getBalance(player)) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
+                    return false;
+                }
+                if (plugin.withdrawMoney(player, amount)) {
+                    team.addBankBalance(amount);
+                    team.addMemberDeposit(player.getUniqueId(), amount);
+                    team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
+                    saveTeam(team);
+                    player.sendMessage(plugin.colorize("&#00FF99&l[Bank] &fDeposited &#FFCC00$" + String.format("%,.2f", amount) + " &fto team bank from your account!"));
+                    return true;
+                } else {
+                    player.sendMessage(plugin.colorize("&cError: Deposit failed! Transaction could not be completed."));
+                    return false;
+                }
+            } else {
+                // Simulated Deposit
+                team.addBankBalance(amount);
+                team.addMemberDeposit(player.getUniqueId(), amount);
+                team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
+                saveTeam(team);
+                player.sendMessage(plugin.colorize("&#00FF99&l[Simulated Bank] &fDeposited &#FFCC00$" + String.format("%,.2f", amount) + " &finto team bank!"));
+                return true;
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Attempts to withdraw money from the team's bank.
+     * Uses a TransactionLock to prevent concurrent modifiers.
+     */
+    public boolean withdrawFromBank(Player player, Team team, double amount) {
+        TransactionLock lock = getTeamLock(team.getId());
+        if (!lock.tryLock()) {
+            player.sendMessage(plugin.colorize("&c[Anti-Dupe] &7A transaction is already in progress for your team. This event has been canceled."));
+            return false;
+        }
+        try {
+            if (team.getBankBalance() < amount) {
+                player.sendMessage(plugin.colorize("&cError: Your team bank only holds $" + String.format("%,.2f", team.getBankBalance()) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
+                return false;
+            }
+            if (plugin.getEconomy() != null) {
+                if (plugin.depositMoney(player, amount)) {
+                    team.removeBankBalance(amount);
+                    team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
+                    saveTeam(team);
+                    player.sendMessage(plugin.colorize("&#FF3366&l[Bank] &fWithdrew &#FFCC00$" + String.format("%,.2f", amount) + " &ffrom team bank to your wallet."));
+                    return true;
+                } else {
+                    player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Transaction could not be completed."));
+                    return false;
+                }
+            } else {
+                // Simulated Withdraw
+                team.removeBankBalance(amount);
+                team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
+                saveTeam(team);
+                player.sendMessage(plugin.colorize("&#FF3366&l[Simulated Bank] &fWithdrew &#FFCC00$" + String.format("%,.2f", amount) + " &ffrom team bank."));
+                return true;
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
 }

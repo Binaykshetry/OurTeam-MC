@@ -192,7 +192,7 @@ public class TeamGUIManager {
         // Team Enderchest
         int echestSlot = getMenuSlot("main", "echest-slot", 14, size);
         if (echestSlot >= 0 && echestSlot < size) {
-            inv.setItem(echestSlot, createGuiItem(Material.ENDER_CHEST, 
+            inv.setItem(echestSlot, createNamedSkullItem("MHF_Chest", 
                 "&#CC99FFTeam Shared Enderchest", 
                 "&7Status: Public vault of valuables",
                 "",
@@ -234,7 +234,7 @@ public class TeamGUIManager {
         // Leave Option (Slot 18 by default)
         int leaveSlot = getMenuSlot("main", "leave-slot", 18, size);
         if (leaveSlot >= 0 && leaveSlot < size) {
-            inv.setItem(leaveSlot, createGuiItem(Material.RED_TULIP,
+            inv.setItem(leaveSlot, createNamedSkullItem("MHF_TNT",
                 "&#FF3333Leave Team Option",
                 "&7Abandon or quit this team.",
                 "",
@@ -443,7 +443,7 @@ public class TeamGUIManager {
         ));
 
         // Slot 26: Go back arrow
-        inv.setItem(26, createGuiItem(Material.ARROW, 
+        inv.setItem(26, createNamedSkullItem("MHF_ArrowLeft", 
             "&e◀ Return to Dashboard", 
             "&7Go back to main team GUI panel"
         ));
@@ -481,7 +481,7 @@ public class TeamGUIManager {
         ));
 
         // Slot 49: Return Arrow
-        inv.setItem(49, createGuiItem(Material.ARROW,
+        inv.setItem(49, createNamedSkullItem("MHF_ArrowLeft",
             "&e◀ Return to Dashboard",
             "&7Go back to main team GUI panel"
         ));
@@ -526,7 +526,7 @@ public class TeamGUIManager {
         // Deposit $100
         int dep100Slot = getMenuSlot("bank", "deposit100-slot", 10, size);
         if (dep100Slot >= 0 && dep100Slot < size) {
-            inv.setItem(dep100Slot, createGuiItem(Material.EMERALD, 
+            inv.setItem(dep100Slot, createMemberSkullItem(player, 
                 "&#00FF99&lDeposit $100.00", 
                 "&7Directly deposit $100.00 from your hand.",
                 "",
@@ -537,7 +537,7 @@ public class TeamGUIManager {
         // Custom Donation / Deposit
         int customDepSlot = getMenuSlot("bank", "customdeposit-slot", 11, size);
         if (customDepSlot >= 0 && customDepSlot < size) {
-            inv.setItem(customDepSlot, createGuiItem(Material.WRITABLE_BOOK, 
+            inv.setItem(customDepSlot, createMemberSkullItem(player, 
                 "&#00FFBC&lCustom Deposit / Donate", 
                 "&7Deposit or donate any custom amount.",
                 "&7Click here, then type the amount in chat.",
@@ -549,7 +549,7 @@ public class TeamGUIManager {
         // Ledger info
         int ledgerSlot = getMenuSlot("bank", "ledger-slot", 13, size);
         if (ledgerSlot >= 0 && ledgerSlot < size) {
-            inv.setItem(ledgerSlot, createGuiItem(Material.GOLD_BLOCK, 
+            inv.setItem(ledgerSlot, createMemberSkullItem(Bukkit.getOfflinePlayer(team.getOwner()), 
                 "&#FFCC00&lAccount Balance Info", 
                 "&7Bank details & interest stats",
                 "",
@@ -563,7 +563,7 @@ public class TeamGUIManager {
         // Transaction History button
         int historySlot = getMenuSlot("bank", "history-slot", 12, size);
         if (historySlot >= 0 && historySlot < size) {
-            inv.setItem(historySlot, createGuiItem(Material.BOOK, 
+            inv.setItem(historySlot, createNamedSkullItem("MHF_Question", 
                 "&#00FFBB&lTransaction History", 
                 "&7View detailed logs of team transactions.",
                 "&7Lists last 10 deposits and withdrawals.",
@@ -575,7 +575,7 @@ public class TeamGUIManager {
         // Custom Withdraw
         int customWithSlot = getMenuSlot("bank", "customwithdraw-slot", 15, size);
         if (customWithSlot >= 0 && customWithSlot < size) {
-            inv.setItem(customWithSlot, createGuiItem(Material.REDSTONE, 
+            inv.setItem(customWithSlot, createMemberSkullItem(Bukkit.getOfflinePlayer(team.getOwner()), 
                 "&#FF3366&lCustom Withdraw", 
                 "&7Withdraw any custom amount of money.",
                 "&7Click here, then type the amount in chat.",
@@ -588,7 +588,7 @@ public class TeamGUIManager {
         // Withdraw $100
         int with100Slot = getMenuSlot("bank", "withdraw100-slot", 16, size);
         if (with100Slot >= 0 && with100Slot < size) {
-            inv.setItem(with100Slot, createGuiItem(Material.ANVIL, 
+            inv.setItem(with100Slot, createMemberSkullItem(Bukkit.getOfflinePlayer(team.getOwner()), 
                 "&#FF3333&lWithdraw $100.00", 
                 "&7Directly withdraw $100.00 from the vault.",
                 "&7&o(Admins/Owner Only)",
@@ -600,7 +600,7 @@ public class TeamGUIManager {
         // Return Arrow
         int backSlot = getMenuSlot("bank", "back-slot", 22, size);
         if (backSlot >= 0 && backSlot < size) {
-            inv.setItem(backSlot, createGuiItem(Material.ARROW, 
+            inv.setItem(backSlot, createNamedSkullItem("MHF_ArrowLeft", 
                 "&e&l◀ Return to Dashboard", 
                 "&7Go back to main team GUI panel"
             ));
@@ -658,7 +658,7 @@ public class TeamGUIManager {
         // Back button
         int backSlot = getMenuSlot("bank_history", "back-slot", 22, size);
         if (backSlot >= 0 && backSlot < size) {
-            inv.setItem(backSlot, createGuiItem(Material.ARROW, 
+            inv.setItem(backSlot, createNamedSkullItem("MHF_ArrowLeft", 
                 "&e&l◀ Return to Bank Menu", 
                 "&7Go back to team bank controls"
             ));
@@ -1074,7 +1074,7 @@ public class TeamGUIManager {
         }
 
         // Slot 22: Return to Dashboard
-        inv.setItem(22, createGuiItem(Material.ARROW, 
+        inv.setItem(22, createNamedSkullItem("MHF_ArrowLeft", 
             "&e&l◀ Return to Dashboard", 
             "&7Go back to main team GUI panel"
         ));
@@ -1125,7 +1125,7 @@ public class TeamGUIManager {
         int backSlot = getMenuSlot("list", "back-slot", size - 5, size);
         if (backSlot >= 0 && backSlot < size) {
             if (viewerTeam == null) {
-                inv.setItem(backSlot, createGuiItem(Material.ARROW,
+                inv.setItem(backSlot, createNamedSkullItem("MHF_ArrowLeft",
                     "&e◀ Return to Discovery",
                     "&7Go back to Team Hub"
                 ));
@@ -1185,7 +1185,7 @@ public class TeamGUIManager {
         // Slot: Create a New Team
         int createSlot = getMenuSlot("noteam", "create-slot", 11, size);
         if (createSlot >= 0 && createSlot < size) {
-            inv.setItem(createSlot, createGuiItem(Material.GRASS_BLOCK,
+            inv.setItem(createSlot, createMemberSkullItem(player,
                 "&#33CCFF&lCreate a New Team",
                 "&7Form an organization to pool your efforts,",
                 "&7protect your lands, trade with bank interest,",
@@ -1198,7 +1198,7 @@ public class TeamGUIManager {
         // Slot: View Active Teams Directory
         int listSlot = getMenuSlot("noteam", "list-slot", 13, size);
         if (listSlot >= 0 && listSlot < size) {
-            inv.setItem(listSlot, createGuiItem(Material.BOOK,
+            inv.setItem(listSlot, createNamedSkullItem("MHF_Question",
                 "&#FFCC00&lActive Teams Directory",
                 "&7Expand your network! Look through all existing",
                 "&7teams, and submit a Join Request to join one.",
@@ -1210,7 +1210,7 @@ public class TeamGUIManager {
         // Slot: Your Received Invitations & Options
         int invitationsSlot = getMenuSlot("noteam", "invitations-slot", 15, size);
         if (invitationsSlot >= 0 && invitationsSlot < size) {
-            inv.setItem(invitationsSlot, createGuiItem(Material.PAPER,
+            inv.setItem(invitationsSlot, createNamedSkullItem("MHF_Exclamation",
                 "&#CC66FF&lYour Invitations",
                 "&7See teams that have invited you, or requests",
                 "&7that you have pending.",
@@ -1243,6 +1243,22 @@ public class TeamGUIManager {
         SkullMeta meta = (SkullMeta) item.getItemMeta();
         if (meta != null) {
             meta.setOwningPlayer(player);
+            meta.setDisplayName(plugin.colorize(name));
+            List<String> coloredLore = new ArrayList<>();
+            for (String line : lore) {
+                coloredLore.add(plugin.colorize(line));
+            }
+            meta.setLore(coloredLore);
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private ItemStack createNamedSkullItem(String playerName, String name, String... lore) {
+        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) item.getItemMeta();
+        if (meta != null) {
+            meta.setOwningPlayer(Bukkit.getOfflinePlayer(playerName));
             meta.setDisplayName(plugin.colorize(name));
             List<String> coloredLore = new ArrayList<>();
             for (String line : lore) {

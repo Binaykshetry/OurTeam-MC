@@ -237,24 +237,41 @@ public final class OurTeam extends JavaPlugin {
         }, 1200L, 1200L);
     }
 
+    private final java.util.Map<java.util.UUID, Long> bankLastClick = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public boolean checkAndSetBankCooldown(java.util.UUID uuid) {
+        long now = System.currentTimeMillis();
+        long last = bankLastClick.getOrDefault(uuid, 0L);
+        if (now - last < 500L) {
+            return true; // on cooldown to prevent double processing / duping
+        }
+        bankLastClick.put(uuid, now);
+        return false;
+    }
+
     public net.milkbowl.vault.economy.Economy getEconomy() {
+        if (econ == null) {
+            setupEconomy();
+        }
         return econ;
     }
 
     public boolean depositMoney(Player player, double amount) {
-        if (econ == null) return false;
-        net.milkbowl.vault.economy.EconomyResponse res = econ.depositPlayer(player.getName(), amount);
+        net.milkbowl.vault.economy.Economy economy = getEconomy();
+        if (economy == null) return false;
+        net.milkbowl.vault.economy.EconomyResponse res = economy.depositPlayer((org.bukkit.OfflinePlayer) player, amount);
         if (res == null || !res.transactionSuccess()) {
-            res = econ.depositPlayer(player, amount);
+            res = economy.depositPlayer(player.getName(), amount);
         }
         return res != null && res.transactionSuccess();
     }
 
     public boolean withdrawMoney(Player player, double amount) {
-        if (econ == null) return false;
-        net.milkbowl.vault.economy.EconomyResponse res = econ.withdrawPlayer(player.getName(), amount);
+        net.milkbowl.vault.economy.Economy economy = getEconomy();
+        if (economy == null) return false;
+        net.milkbowl.vault.economy.EconomyResponse res = economy.withdrawPlayer((org.bukkit.OfflinePlayer) player, amount);
         if (res == null || !res.transactionSuccess()) {
-            res = econ.withdrawPlayer(player, amount);
+            res = economy.withdrawPlayer(player.getName(), amount);
         }
         return res != null && res.transactionSuccess();
     }

@@ -336,34 +336,19 @@ public class GUIListener implements Listener {
         else if ("bank".equalsIgnoreCase(menu)) {
             int maxSlot = plugin.getGuiManager().getMenuSize("bank", 27);
             
+            // Anti-dupe system: rate limit click events on banking actions
+            if (plugin.checkAndSetBankCooldown(player.getUniqueId())) {
+                player.sendMessage(plugin.colorize("&c[Anti-Dupe] &7Please wait a moment between banking interactions!"));
+                return;
+            }
+            
             if (slot == plugin.getGuiManager().getMenuSlot("bank", "deposit100-slot", 10, maxSlot)) {
                 // Direct Deposit $100
                 if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                     player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
                     return;
                 }
-                if (plugin.getEconomy() != null) {
-                    if (plugin.getEconomy().has(player, 100)) {
-                        if (plugin.withdrawMoney(player, 100)) {
-                            team.addBankBalance(100);
-                            team.addMemberDeposit(player.getUniqueId(), 100);
-                            team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", 100.0);
-                            plugin.getTeamManager().saveTeam(team);
-                            player.sendMessage(plugin.colorize("&a&l[Bank] &fDeposited &e$100.00 &fto team bank from your account!"));
-                        } else {
-                            player.sendMessage(plugin.colorize("&cError: Deposit failed! Transaction could not be completed."));
-                        }
-                    } else {
-                        player.sendMessage(plugin.colorize("&c&l[Bank] &fYou do not have enough funds ($100.00) in your wallet."));
-                    }
-                } else {
-                    // Simulated Deposit
-                    team.addBankBalance(100);
-                    team.addMemberDeposit(player.getUniqueId(), 100);
-                    team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", 100.0);
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&a&l[Simulated Bank] &fDeposited &e$100.00 &finto your team bank. Balance: &a$" + String.format("%,.2f", team.getBankBalance())));
-                }
+                plugin.getTeamManager().depositToBank(player, team, 100);
                 plugin.getGuiManager().openBankMenu(player, team);
             } else if (slot == plugin.getGuiManager().getMenuSlot("bank", "customdeposit-slot", 11, maxSlot)) {
                 // Custom Deposit (Writable Book)
@@ -389,26 +374,7 @@ public class GUIListener implements Listener {
                     player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
                     return;
                 }
-                if (team.getBankBalance() >= 100) {
-                    if (plugin.getEconomy() != null) {
-                        if (plugin.depositMoney(player, 100)) {
-                            team.removeBankBalance(100);
-                            team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", 100.0);
-                            plugin.getTeamManager().saveTeam(team);
-                            player.sendMessage(plugin.colorize("&a&l[Bank] &fWithdrew &e$100.00 &ffrom team bank to your wallet."));
-                        } else {
-                            player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Transaction could not be completed."));
-                        }
-                    } else {
-                        // Simulated Withdraw
-                        team.removeBankBalance(100);
-                        team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", 100.0);
-                        plugin.getTeamManager().saveTeam(team);
-                        player.sendMessage(plugin.colorize("&a&l[Simulated Bank] &fWithdrew &e$100.00 &ffrom your team bank. Balance: &a$" + String.format("%,.2f", team.getBankBalance())));
-                    }
-                } else {
-                    player.sendMessage(plugin.colorize("&c&l[Bank] &eThe team bank does not have enough balance ($100) to withdraw!"));
-                }
+                plugin.getTeamManager().withdrawFromBank(player, team, 100);
                 plugin.getGuiManager().openBankMenu(player, team);
             } else if (slot == plugin.getGuiManager().getMenuSlot("bank", "history-slot", 12, maxSlot)) {
                 plugin.getGuiManager().openBankHistoryMenu(player, team);

@@ -299,8 +299,8 @@ public class PlayerListener implements Listener {
     }
 
     private void executeDirectTransaction(Player player, Team team, double amount, boolean isDeposit) {
-        if (plugin.getEconomy() == null) {
-            player.sendMessage(plugin.colorize("&cError: Economy plugin is unavailable."));
+        if (plugin.checkAndSetBankCooldown(player.getUniqueId())) {
+            player.sendMessage(plugin.colorize("&c[Anti-Dupe] &7Please wait a moment between banking interactions!"));
             return;
         }
         if (isDeposit) {
@@ -308,42 +308,13 @@ public class PlayerListener implements Listener {
                 player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
                 return;
             }
-            double pBalance = plugin.getEconomy().getBalance(player);
-            if (pBalance < amount) {
-                player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", pBalance) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
-                return;
-            }
-            if (plugin.withdrawMoney(player, amount)) {
-                team.addBankBalance(amount);
-                team.addMemberDeposit(player.getUniqueId(), amount);
-                team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
-                plugin.getTeamManager().saveTeam(team);
-                player.sendMessage(plugin.colorize("&a[Bank] Deposited &e$" + String.format("%,.0f", amount) + " &ainto team bank!"));
-            } else {
-                player.sendMessage(plugin.colorize("&cError: Deposit failed! Transaction could not be completed."));
-            }
+            plugin.getTeamManager().depositToBank(player, team, amount);
         } else {
             if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                 player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
                 return;
             }
-            double tBalance = team.getBankBalance();
-            if (tBalance < amount) {
-                player.sendMessage(plugin.colorize("&cError: Team bank only has $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
-                return;
-            }
-            if (team.getBankBalance() >= amount) {
-                if (plugin.depositMoney(player, amount)) {
-                    team.removeBankBalance(amount);
-                    team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
-                    plugin.getTeamManager().saveTeam(team);
-                    player.sendMessage(plugin.colorize("&a[Bank] Withdrew &e$" + String.format("%,.0f", amount) + " &afrom team bank!"));
-                } else {
-                    player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Transaction could not be completed."));
-                }
-            } else {
-                player.sendMessage(plugin.colorize("&cError: Could not deduct funds from the team bank."));
-            }
+            plugin.getTeamManager().withdrawFromBank(player, team, amount);
         }
         com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
     }
@@ -427,76 +398,27 @@ public class PlayerListener implements Listener {
                     return;
                 }
 
-                if (plugin.getEconomy() == null) {
-                    if (action.equalsIgnoreCase("DEPOSIT")) {
-                        if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                            player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
-                            com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
-                            return;
-                        }
-                        team.addBankBalance(amount);
-                        team.addMemberDeposit(player.getUniqueId(), amount);
-                        team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
-                        plugin.getTeamManager().saveTeam(team);
-                        player.sendMessage(plugin.colorize("&a[Simulated Bank] Deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
-                    } else if (action.equalsIgnoreCase("WITHDRAW")) {
-                        if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
-                            player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
-                            com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
-                            return;
-                        }
-                        double tBalance = team.getBankBalance();
-                        if (tBalance < amount) {
-                            player.sendMessage(plugin.colorize("&cError: Your team bank only holds $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
-                            com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
-                            return;
-                        }
-                        team.removeBankBalance(amount);
-                        team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
-                        plugin.getTeamManager().saveTeam(team);
-                        player.sendMessage(plugin.colorize("&a[Simulated Bank] Withdrew &e$" + String.format("%,.2f", amount) + " &afrom team bank!"));
-                    }
+                // Anti-dupe system check on transaction run
+                if (plugin.checkAndSetBankCooldown(player.getUniqueId())) {
+                    player.sendMessage(plugin.colorize("&c[Anti-Dupe] &7Please wait a moment between banking interactions!"));
                     com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
                     return;
                 }
 
                 if (action.equalsIgnoreCase("DEPOSIT")) {
-                    if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId())) {
+                    if (!team.isPayToggle() && !team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                         player.sendMessage(plugin.colorize("&cError: Team deposits are currently disabled (paytoggle is OFF)."));
+                        com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
                         return;
                     }
-                    double pBalance = plugin.getEconomy().getBalance(player);
-                    if (pBalance < amount) {
-                        player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", pBalance) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
-                        return;
-                    }
-                    if (plugin.withdrawMoney(player, amount)) {
-                        team.addBankBalance(amount);
-                        team.addMemberDeposit(player.getUniqueId(), amount);
-                        team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
-                        plugin.getTeamManager().saveTeam(team);
-                        player.sendMessage(plugin.colorize("&a[Bank] Custom deposited &e$" + String.format("%,.2f", amount) + " &ainto team bank!"));
-                    } else {
-                        player.sendMessage(plugin.colorize("&cError: Custom deposit failed! Transaction could not be completed."));
-                    }
+                    plugin.getTeamManager().depositToBank(player, team, amount);
                 } else if (action.equalsIgnoreCase("WITHDRAW")) {
                     if (!team.isModeratorOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                         player.sendMessage(plugin.colorize("&cError: Only Team Admins, Moderators or Owners can withdraw team funds."));
+                        com.ourteam.commands.TeamCommand.openBankInventory(player, team, plugin);
                         return;
                     }
-                    double tBalance = team.getBankBalance();
-                    if (tBalance < amount) {
-                        player.sendMessage(plugin.colorize("&cError: Your team bank only holds $" + String.format("%,.2f", tBalance) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
-                        return;
-                    }
-                    if (plugin.depositMoney(player, amount)) {
-                        team.removeBankBalance(amount);
-                        team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
-                        plugin.getTeamManager().saveTeam(team);
-                        player.sendMessage(plugin.colorize("&a[Bank] Custom withdrew &e$" + String.format("%,.2f", amount) + " &afrom team bank!"));
-                    } else {
-                        player.sendMessage(plugin.colorize("&cError: Custom withdrawal failed! Transaction could not be completed."));
-                    }
+                    plugin.getTeamManager().withdrawFromBank(player, team, amount);
                 }
 
                 // Re-open GUI
