@@ -4,7 +4,8 @@ main: com.ourteam.OurTeam
 api-version: 1.20
 description: Robust and highly customizable Minecraft teams plugin inspired by BetterTeams.
 author: OurTeamDev
-softdepend: [Vault, LuckPerms, PlaceholderAPI]
+depend: [Vault]
+softdepend: [LuckPerms, PlaceholderAPI]
 
 commands:
   team:
