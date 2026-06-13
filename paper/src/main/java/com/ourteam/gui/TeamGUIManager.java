@@ -1239,34 +1239,42 @@ public class TeamGUIManager {
     }
 
     private ItemStack createMemberSkullItem(org.bukkit.OfflinePlayer player, String name, String... lore) {
-        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) item.getItemMeta();
-        if (meta != null) {
-            meta.setOwningPlayer(player);
-            meta.setDisplayName(plugin.colorize(name));
-            List<String> coloredLore = new ArrayList<>();
-            for (String line : lore) {
-                coloredLore.add(plugin.colorize(line));
+        Material mat = Material.BOOK;
+        if (name != null) {
+            String strip = name.replaceAll("(?i)&[0-9a-fk-orx]", "").replaceAll("(?i)#[0-9a-f]{6}", "").toLowerCase();
+            if (strip.contains("create") || strip.contains("apply") || strip.contains("join")) {
+                mat = Material.EMERALD;
+            } else if (strip.contains("deposit")) {
+                mat = Material.EMERALD;
+            } else if (strip.contains("withdraw")) {
+                mat = Material.REDSTONE;
+            } else if (strip.contains("balance") || strip.contains("ledger") || strip.contains("info")) {
+                mat = Material.BOOK;
+            } else if (strip.contains("team") || strip.contains("alliance")) {
+                mat = Material.SHIELD;
+            } else {
+                mat = Material.BOOK;
             }
-            meta.setLore(coloredLore);
-            item.setItemMeta(meta);
         }
-        return item;
+        return createGuiItem(mat, name, lore);
     }
 
     private ItemStack createNamedSkullItem(String playerName, String name, String... lore) {
-        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) item.getItemMeta();
-        if (meta != null) {
-            meta.setOwningPlayer(Bukkit.getOfflinePlayer(playerName));
-            meta.setDisplayName(plugin.colorize(name));
-            List<String> coloredLore = new ArrayList<>();
-            for (String line : lore) {
-                coloredLore.add(plugin.colorize(line));
+        Material mat = Material.BOOK;
+        if (playerName != null) {
+            String lowerPlayer = playerName.toLowerCase();
+            if (lowerPlayer.contains("arrow")) {
+                mat = Material.ARROW;
+            } else if (lowerPlayer.contains("chest")) {
+                mat = Material.ENDER_CHEST;
+            } else if (lowerPlayer.contains("tnt")) {
+                mat = Material.TNT;
+            } else if (lowerPlayer.contains("question")) {
+                mat = Material.BOOK;
+            } else if (lowerPlayer.contains("exclamation")) {
+                mat = Material.WRITABLE_BOOK;
             }
-            meta.setLore(coloredLore);
-            item.setItemMeta(meta);
         }
-        return item;
+        return createGuiItem(mat, name, lore);
     }
 }

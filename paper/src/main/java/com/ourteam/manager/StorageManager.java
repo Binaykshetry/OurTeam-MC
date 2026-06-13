@@ -218,9 +218,14 @@ public class StorageManager {
      */
     public void deleteTeam(Team team) {
         team.setDisbanded(true);
-        saveTeam(team);
         String type = plugin.getConfig().getString("storage.type", "JSON").toUpperCase();
-        if (!type.equals("JSON")) {
+        if (type.equals("JSON")) {
+            String filename = team.getName().toLowerCase().replaceAll("[^a-zA-Z0-9_-]", "") + ".json";
+            File file = new File(teamsFolder, filename);
+            if (file.exists()) {
+                file.delete();
+            }
+        } else {
             try (Connection conn = getConnection()) {
                 if (conn != null) {
                     try (PreparedStatement ps = conn.prepareStatement("DELETE FROM ourteam_teams WHERE id = ?")) {

@@ -12,11 +12,11 @@ commands:
     description: Core command for OurTeam player actions.
     aliases: [t, teams]
     usage: /team [create|join|invite|accept|leave|kick|chat|friendlyfire|home|sethome|list|info|disband|bank]
-  teamadmin:
+  adminteam:
     description: Admin commands to override and manage teams.
-    aliases: [ta, adminteam, adteam, teamsadmin]
+    aliases: [ta, teamsadmin]
     permission: ourteam.admin
-    usage: /teamadmin [reload|disband|forcejoin|forcekick|setowner]
+    usage: /adminteam [reload|disband|forcejoin|forcekick|setowner]
 
 permissions:
   ourteam.use:

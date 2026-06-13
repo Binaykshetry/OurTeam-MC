@@ -538,35 +538,35 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
         }
 
         String rString = reason.toString().trim();
-        team.setSystemLocked(true);
-        team.setLockReason(isBan ? "BANNED: " + rString : rString);
-        
-        // Wipe all existence/money/stats/scores/homes/warps of the team immediately upon locking or banning
-        team.setBankBalance(0);
-        team.setKills(0);
-        team.setDeaths(0);
-        team.setGrindingPoints(0);
-        if (team.getMemberDeposits() != null) {
-            team.getMemberDeposits().clear();
-        }
-        if (team.getMultiHomes() != null) {
-            team.getMultiHomes().clear();
-        }
-        if (team.getMultiWarps() != null) {
-            team.getMultiWarps().clear();
-        }
-        team.setEchestData("");
-        if (team.getEchest() != null) {
-            team.getEchest().clear();
-        }
-
-        plugin.getTeamManager().saveTeam(team);
-
         if (isBan) {
             // Broadcast the ban
             org.bukkit.Bukkit.broadcastMessage(plugin.colorize("&c&l[Team Ban] &eTeam &b&l" + team.getName() + " &ehas been BANNED! All level points, bank balances, and warp assets are permanently wiped from existence."));
             logAction(sender.getName(), "BAN_TEAM", team.getName(), "Banned: " + rString);
+            plugin.getTeamManager().disbandTeam(team);
         } else {
+            team.setSystemLocked(true);
+            team.setLockReason(rString);
+            
+            // Wipe all existence/money/stats/scores/homes/warps of the team immediately upon locking
+            team.setBankBalance(0);
+            team.setKills(0);
+            team.setDeaths(0);
+            team.setGrindingPoints(0);
+            if (team.getMemberDeposits() != null) {
+                team.getMemberDeposits().clear();
+            }
+            if (team.getMultiHomes() != null) {
+                team.getMultiHomes().clear();
+            }
+            if (team.getMultiWarps() != null) {
+                team.getMultiWarps().clear();
+            }
+            team.setEchestData("");
+            if (team.getEchest() != null) {
+                team.getEchest().clear();
+            }
+
+            plugin.getTeamManager().saveTeam(team);
             sender.sendMessage(plugin.colorize("&a[Admin] Administratively LOCKED team &e" + team.getName() + " &afor &7" + rString));
             logAction(sender.getName(), "LOCK_TEAM", team.getName(), "Locked: " + rString);
         }

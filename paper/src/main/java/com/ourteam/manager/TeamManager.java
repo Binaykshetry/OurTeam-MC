@@ -189,30 +189,24 @@ public class TeamManager {
             return false;
         }
         try {
-            if (plugin.getEconomy() != null) {
-                if (!plugin.getEconomy().has(player, amount)) {
-                    player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", plugin.getEconomy().getBalance(player)) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
-                    return false;
-                }
-                if (plugin.withdrawMoney(player, amount)) {
-                    team.addBankBalance(amount);
-                    team.addMemberDeposit(player.getUniqueId(), amount);
-                    team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
-                    saveTeam(team);
-                    player.sendMessage(plugin.colorize("&#00FF99&l[Bank] &fDeposited &#FFCC00$" + String.format("%,.2f", amount) + " &fto team bank from your account!"));
-                    return true;
-                } else {
-                    player.sendMessage(plugin.colorize("&cError: Deposit failed! Transaction could not be completed."));
-                    return false;
-                }
-            } else {
-                // Simulated Deposit
+            if (plugin.getEconomy() == null) {
+                player.sendMessage(plugin.colorize("&cError: Economy plugin is currently unavailable."));
+                return false;
+            }
+            if (!plugin.getEconomy().has(player, amount)) {
+                player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", plugin.getEconomy().getBalance(player)) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
+                return false;
+            }
+            if (plugin.withdrawMoney(player, amount)) {
                 team.addBankBalance(amount);
                 team.addMemberDeposit(player.getUniqueId(), amount);
                 team.addTransaction(player.getName(), player.getUniqueId(), "DEPOSIT", amount);
                 saveTeam(team);
-                player.sendMessage(plugin.colorize("&#00FF99&l[Simulated Bank] &fDeposited &#FFCC00$" + String.format("%,.2f", amount) + " &finto team bank!"));
+                player.sendMessage(plugin.colorize("&#00FF99&l[Bank] &fDeposited &#FFCC00$" + String.format("%,.2f", amount) + " &fto team bank from your account!"));
                 return true;
+            } else {
+                player.sendMessage(plugin.colorize("&cError: Deposit failed! Transaction could not be completed."));
+                return false;
             }
         } finally {
             lock.unlock();
@@ -230,28 +224,23 @@ public class TeamManager {
             return false;
         }
         try {
+            if (plugin.getEconomy() == null) {
+                player.sendMessage(plugin.colorize("&cError: Economy plugin is currently unavailable."));
+                return false;
+            }
             if (team.getBankBalance() < amount) {
                 player.sendMessage(plugin.colorize("&cError: Your team bank only holds $" + String.format("%,.2f", team.getBankBalance()) + ". Cannot withdraw $" + String.format("%,.2f", amount) + "."));
                 return false;
             }
-            if (plugin.getEconomy() != null) {
-                if (plugin.depositMoney(player, amount)) {
-                    team.removeBankBalance(amount);
-                    team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
-                    saveTeam(team);
-                    player.sendMessage(plugin.colorize("&#FF3366&l[Bank] &fWithdrew &#FFCC00$" + String.format("%,.2f", amount) + " &ffrom team bank to your wallet."));
-                    return true;
-                } else {
-                    player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Transaction could not be completed."));
-                    return false;
-                }
-            } else {
-                // Simulated Withdraw
+            if (plugin.depositMoney(player, amount)) {
                 team.removeBankBalance(amount);
                 team.addTransaction(player.getName(), player.getUniqueId(), "WITHDRAW", amount);
                 saveTeam(team);
-                player.sendMessage(plugin.colorize("&#FF3366&l[Simulated Bank] &fWithdrew &#FFCC00$" + String.format("%,.2f", amount) + " &ffrom team bank."));
+                player.sendMessage(plugin.colorize("&#FF3366&l[Bank] &fWithdrew &#FFCC00$" + String.format("%,.2f", amount) + " &ffrom team bank to your wallet."));
                 return true;
+            } else {
+                player.sendMessage(plugin.colorize("&cError: Withdrawal failed! Transaction could not be completed."));
+                return false;
             }
         } finally {
             lock.unlock();

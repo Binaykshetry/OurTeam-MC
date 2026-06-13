@@ -84,8 +84,8 @@ public final class OurTeam extends JavaPlugin {
         getCommand("team").setExecutor(teamCmd);
         getCommand("team").setTabCompleter(teamCmd);
         AdminCommand adminCmd = new AdminCommand(this);
-        getCommand("teamadmin").setExecutor(adminCmd);
-        getCommand("teamadmin").setTabCompleter(adminCmd);
+        getCommand("adminteam").setExecutor(adminCmd);
+        getCommand("adminteam").setTabCompleter(adminCmd);
 
         // Register Listeners
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
@@ -108,9 +108,7 @@ public final class OurTeam extends JavaPlugin {
             getLogger().info("Successfully detected LuckPerms API! Node permissions fully loaded.");
         }
 
-        // Register interest scheduler task for Team Bank
-        registerInterestTask();
-        registerHourlyPassiveMoneyTask();
+        // Register repeating tasks for Team updates
         registerRepeatingTasks();
 
         getLogger().log(Level.INFO, "OurTeam plugin successfully enabled! Ready for cooperation.");
@@ -126,79 +124,6 @@ public final class OurTeam extends JavaPlugin {
         }
         econ = rsp.getProvider();
         return econ != null;
-    }
-
-    private void registerHourlyPassiveMoneyTask() {
-        // Runs every hour (72000 ticks)
-        getServer().getScheduler().runTaskTimer(this, () -> {
-            if (!getConfig().getBoolean("team-bank.enable", true)) {
-                return;
-            }
-            boolean passiveEnable = getConfig().getBoolean("team-bank.passive-increase.enable", true);
-            if (!passiveEnable) {
-                return;
-            }
-            double amountToIncrease = getConfig().getDouble("team-bank.passive-increase.amount", 100.0);
-            if (amountToIncrease <= 0) {
-                return;
-            }
-
-            for (Team team : teamManager.getTeams().values()) {
-                team.addBankBalance(amountToIncrease);
-                teamManager.saveTeam(team);
-
-                // Notify online players
-                for (java.util.UUID memberUuid : team.getMembers()) {
-                    org.bukkit.entity.Player teammate = getServer().getPlayer(memberUuid);
-                    if (teammate != null && teammate.isOnline()) {
-                        teammate.sendMessage(colorize("&a&l[Team Bank] &fYour team bank received an hourly passive deposit of &e$" + amountToIncrease + "! New balance: &a$" + String.format("%,.2f", team.getBankBalance())));
-                    }
-                }
-            }
-        }, 72000L, 72000L);
-    }
-
-    private void registerInterestTask() {
-        long interval = getConfig().getLong("team-bank.interest-interval-ticks", 12000L);
-        getServer().getScheduler().runTaskTimer(this, () -> {
-            if (!getConfig().getBoolean("team-bank.enable", true)) {
-                return;
-            }
-            double rateVal = getConfig().getDouble("team-bank.interest-rate", 5.0);
-            double rate = rateVal / 100.0;
-            double cap = getConfig().getDouble("team-bank.max-accrual", 15.0);
-
-            for (Team team : teamManager.getTeams().values()) {
-                double balance = team.getBankBalance();
-                if (balance <= 0) continue;
-
-                double interest = balance * rate;
-
-                // Dynamic factor: member-size amplification (gives different-different money based on roster scale!)
-                double memberFactor = 1.0 + (team.getMembers().size() * 0.05);
-                interest = interest * memberFactor;
-
-                if (interest > cap) {
-                    interest = cap;
-                }
-                if (interest < 0.01) {
-                    interest = 0.01;
-                }
-
-                // Round to 2 decimals
-                interest = Math.round(interest * 100.0) / 100.0;
-                team.addBankBalance(interest);
-                teamManager.saveTeam(team);
-
-                // Msg online players
-                for (java.util.UUID memberUuid : team.getMembers()) {
-                    org.bukkit.entity.Player teammate = getServer().getPlayer(memberUuid);
-                    if (teammate != null && teammate.isOnline()) {
-                        teammate.sendMessage(colorize("&a&l[Team Bank] &fYour team bank accrued &e$" + interest + " &fin interest! New bank balance: &a$" + String.format("%,.2f", team.getBankBalance())));
-                    }
-                }
-            }
-        }, interval, interval);
     }
 
     private void registerRepeatingTasks() {
