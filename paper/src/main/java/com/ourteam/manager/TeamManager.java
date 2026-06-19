@@ -193,8 +193,9 @@ public class TeamManager {
                 player.sendMessage(plugin.colorize("&cError: Economy plugin is currently unavailable."));
                 return false;
             }
-            if (!plugin.getEconomy().has(player, amount)) {
-                player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", plugin.getEconomy().getBalance(player)) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
+            double walletBalance = plugin.getEconomy().getBalance(player);
+            if (walletBalance < amount) {
+                player.sendMessage(plugin.colorize("&cError: You only have $" + String.format("%,.2f", walletBalance) + " on hand. You need $" + String.format("%,.2f", amount) + " to deposit."));
                 return false;
             }
             if (plugin.withdrawMoney(player, amount)) {
