@@ -271,7 +271,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         }
 
         int maxPlayers = plugin.getConfig().getInt("team-settings.max-players-per-team", 8);
-        if (maxPlayers != -1 && team.getMembers().size() >= maxPlayers) {
+        if (maxPlayers > 0 && team.getMembers().size() >= maxPlayers) {
             player.sendMessage(plugin.colorize("&cYour team is already full (max " + maxPlayers + " players)."));
             return;
         }
@@ -281,9 +281,43 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         target.sendMessage(plugin.getMsg("invited-by").replace("{team}", team.getName()));
     }
 
+    private void showPendingInvitations(Player player) {
+        Team cmdPlayerTeam = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+        if (cmdPlayerTeam != null) {
+            // Show requests to join this team
+            player.sendMessage(plugin.colorize("&8&m====================&r &#00FFBC&lJoin Requests &8&m===================="));
+            int count = 0;
+            for (UUID reqId : cmdPlayerTeam.getRequests()) {
+                String name = Bukkit.getOfflinePlayer(reqId).getName();
+                if (name != null) {
+                    player.sendMessage(plugin.colorize(" &a• &b" + name + " &7- Accept with: &f/team accept " + name));
+                    count++;
+                }
+            }
+            if (count == 0) {
+                player.sendMessage(plugin.colorize("&7Your team has no pending player join requests at the moment."));
+            }
+            player.sendMessage(plugin.colorize("&8&m========================================"));
+        } else {
+            // Show team invitations sent to player
+            player.sendMessage(plugin.colorize("&8&m====================&r &#00FFBC&lReceived Invites &8&m===================="));
+            int count = 0;
+            for (Team team : plugin.getTeamManager().getAllTeams()) {
+                if (team.getInvitedPlayers().contains(player.getUniqueId())) {
+                    player.sendMessage(plugin.colorize(" &a• &b" + team.getName() + " &7- Accept with: &f/team accept " + team.getName()));
+                    count++;
+                }
+            }
+            if (count == 0) {
+                player.sendMessage(plugin.colorize("&7You have no pending invitations to join any teams at the moment."));
+            }
+            player.sendMessage(plugin.colorize("&8&m========================================"));
+        }
+    }
+
     private void handleAccept(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(plugin.colorize("&cUsage: /team accept <teamName|playerName>"));
+            showPendingInvitations(player);
             return;
         }
 
@@ -1019,7 +1053,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         }
 
         int maxPlayers = plugin.getConfig().getInt("team-settings.max-players-per-team", 8);
-        if (maxPlayers != -1 && team.getMembers().size() >= maxPlayers) {
+        if (maxPlayers > 0 && team.getMembers().size() >= maxPlayers) {
             player.sendMessage(plugin.colorize("&cYour team is already full (max " + maxPlayers + " players)."));
             return;
         }
@@ -1077,7 +1111,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(plugin.colorize("&e/team demote <player> &7- Lower teammate's internal rank (Owner only)"));
         player.sendMessage(plugin.colorize("&e/team msg <message> &7- Message online teammates quickly"));
         player.sendMessage(plugin.colorize("&e/team echest &7- Access the shared team virtual Enderchest"));
-        player.sendMessage(plugin.colorize("&e/team bank &7- Access the dynamic team bank and earn interest"));
+        player.sendMessage(plugin.colorize("&e/team bank &7- Access the team virtual bank vault"));
         player.sendMessage(plugin.colorize("&e/team chat &7- Toggle team-only chat channels"));
         player.sendMessage(plugin.colorize("&e/team pvp &7- Toggle friendly-fire PvP protection"));
         player.sendMessage(plugin.colorize("&e/team sethome [name] &7- Set named/default home spawn (Admin+)"));
@@ -1285,26 +1319,68 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
                 }
             }
             return suggestions;
-        } else if (args.length == 2 && (args[0].equalsIgnoreCase("join") || args[0].equalsIgnoreCase("accept") || args[0].equalsIgnoreCase("request") || args[0].equalsIgnoreCase("disband") || args[0].equalsIgnoreCase("info") || args[0].equalsIgnoreCase("bank"))) {
-            List<String> suggestions = new ArrayList<>();
+        } else if (args.length == 2) {
+            String sub = args[0].toLowerCase();
             String query = args[1].toLowerCase();
-            for (Team t : plugin.getTeamManager().getAllTeams()) {
-                if (t.getName().toLowerCase().startsWith(query)) {
-                    suggestions.add(t.getName());
-                }
-            }
-            return suggestions;
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("allthecommandseen")) {
-            List<String> subCommands = java.util.Arrays.asList(
-                "create", "invite", "join", "accept", "request", "acceptrequest", "leave", "kick", "disband", "promote", "demote", "msg", "chat", "pvp", "sethome", "home", "setwarp", "warp", "delhome", "delwarp", "info", "bank", "list", "paytoggle", "gui", "settings", "top"
-            );
             List<String> suggestions = new ArrayList<>();
-            for (String sub : subCommands) {
-                if (sub.toLowerCase().startsWith(args[1].toLowerCase())) {
-                    suggestions.add(sub);
+
+            if (sub.equals("invite")) {
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    if (p.getName().toLowerCase().startsWith(query)) {
+                        suggestions.add(p.getName());
+                    }
                 }
+                return suggestions;
+            } else if (sub.equals("kick") || sub.equals("promote") || sub.equals("demote")) {
+                Team team = (sender instanceof Player) ? plugin.getTeamManager().getPlayerTeam(((Player) sender).getUniqueId()) : null;
+                if (team != null) {
+                    for (UUID memberId : team.getMembers()) {
+                        String name = Bukkit.getOfflinePlayer(memberId).getName();
+                        if (name != null && name.toLowerCase().startsWith(query)) {
+                            suggestions.add(name);
+                        }
+                    }
+                }
+                return suggestions;
+            } else if (sub.equals("acceptrequest")) {
+                Team team = (sender instanceof Player) ? plugin.getTeamManager().getPlayerTeam(((Player) sender).getUniqueId()) : null;
+                if (team != null) {
+                    for (UUID reqId : team.getRequests()) {
+                        String name = Bukkit.getOfflinePlayer(reqId).getName();
+                        if (name != null && name.toLowerCase().startsWith(query)) {
+                            suggestions.add(name);
+                        }
+                    }
+                }
+                return suggestions;
+            } else if (sub.equals("accept") || sub.equals("join") || sub.equals("request") || sub.equals("disband") || sub.equals("info") || sub.equals("bank")) {
+                Team team = (sender instanceof Player) ? plugin.getTeamManager().getPlayerTeam(((Player) sender).getUniqueId()) : null;
+                if (team != null && sub.equals("accept")) {
+                    for (UUID reqId : team.getRequests()) {
+                        String name = Bukkit.getOfflinePlayer(reqId).getName();
+                        if (name != null && name.toLowerCase().startsWith(query)) {
+                            suggestions.add(name);
+                        }
+                    }
+                } else {
+                    for (Team t : plugin.getTeamManager().getAllTeams()) {
+                        if (t.getName().toLowerCase().startsWith(query)) {
+                            suggestions.add(t.getName());
+                        }
+                    }
+                }
+                return suggestions;
+            } else if (sub.equals("allthecommandseen")) {
+                List<String> subCommands = java.util.Arrays.asList(
+                    "create", "invite", "join", "accept", "request", "acceptrequest", "leave", "kick", "disband", "promote", "demote", "msg", "chat", "pvp", "sethome", "home", "setwarp", "warp", "delhome", "delwarp", "info", "bank", "list", "paytoggle", "gui", "settings", "top"
+                );
+                for (String s : subCommands) {
+                    if (s.toLowerCase().startsWith(query)) {
+                        suggestions.add(s);
+                    }
+                }
+                return suggestions;
             }
-            return suggestions;
         } else if (args.length == 3 && args[0].equalsIgnoreCase("allthecommandseen") && (args[1].equalsIgnoreCase("join") || args[1].equalsIgnoreCase("accept") || args[1].equalsIgnoreCase("request") || args[1].equalsIgnoreCase("disband") || args[1].equalsIgnoreCase("info") || args[1].equalsIgnoreCase("bank"))) {
             List<String> suggestions = new ArrayList<>();
             String query = args[2].toLowerCase();
