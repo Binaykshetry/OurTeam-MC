@@ -593,8 +593,9 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         boolean isWarp = args[0].equalsIgnoreCase("warp");
 
         // Permission check
-        if (!player.hasPermission("ourteam.warp") && !player.hasPermission("ourteam.home")) {
-            player.sendMessage(plugin.colorize("&cYou do not have permission to teleport."));
+        String requiredPerm = isWarp ? "ourteam.warp" : "ourteam.home";
+        if (!player.hasPermission(requiredPerm)) {
+            player.sendMessage(plugin.colorize("&cYou do not have the '" + requiredPerm + "' permission."));
             return;
         }
 
@@ -631,8 +632,9 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (!player.hasPermission("ourteam.delhome") && !player.hasPermission("ourteam.delwarp")) {
-            player.sendMessage(plugin.colorize("&cYou do not have permission to delete."));
+        String requiredPerm = isWarp ? "ourteam.delwarp" : "ourteam.delhome";
+        if (!player.hasPermission(requiredPerm)) {
+            player.sendMessage(plugin.colorize("&cYou do not have the '" + requiredPerm + "' permission."));
             return;
         }
 
