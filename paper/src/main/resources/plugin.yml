@@ -22,6 +22,33 @@ permissions:
   ourteam.use:
     description: Allows players to use standard team commands.
     default: true
+  ourteam.request:
+    description: Allows standard players to send join requests to teams.
+    default: true
+  ourteam.home:
+    description: Allows standard players to teleport to team home spawns.
+    default: true
+  ourteam.warp:
+    description: Allows standard players to teleport to team warps.
+    default: true
+  ourteam.sethome:
+    description: Allows players to create/set team home spawns.
+    default: true
+  ourteam.setwarp:
+    description: Allows players to create/set team warps.
+    default: true
+  ourteam.delhome:
+    description: Allows players to delete team home spawns.
+    default: true
+  ourteam.delwarp:
+    description: Allows players to delete team warps.
+    default: true
+  ourteam.sethome.others:
+    description: Allows setting home spawn for other players.
+    default: op
+  ourteam.setwarp.others:
+    description: Allows setting warp for other players.
+    default: op
   ourteam.admin:
     description: Allows administrators to manage all teams and reload configs.
     default: op
