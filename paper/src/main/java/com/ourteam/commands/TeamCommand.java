@@ -303,7 +303,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(plugin.colorize("&8&m====================&r &#00FFBC&lReceived Invites &8&m===================="));
             int count = 0;
             for (Team team : plugin.getTeamManager().getAllTeams()) {
-                if (team.getInvitedPlayers().contains(player.getUniqueId())) {
+                if (team.hasInvite(player.getUniqueId())) {
                     player.sendMessage(plugin.colorize(" &a• &b" + team.getName() + " &7- Accept with: &f/team accept " + team.getName()));
                     count++;
                 }
