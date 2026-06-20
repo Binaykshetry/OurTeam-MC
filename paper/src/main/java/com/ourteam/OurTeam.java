@@ -481,8 +481,8 @@ public final class OurTeam extends JavaPlugin {
                 }
 
                 if (secondsLeft <= 0) {
-                    executeTeleport(player, destination, locationName);
                     cancelTeleport(player, false, false);
+                    executeTeleport(player, destination, locationName);
                     teleportCooldowns.put(uuid, System.currentTimeMillis());
                     return;
                 }
