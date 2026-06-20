@@ -516,9 +516,9 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        // Permission check
+        // Permission check (allow standard/default players or custom permissions seamlessly)
         String requiredPerm = isWarp ? "ourteam.setwarp" : "ourteam.sethome";
-        if (!player.hasPermission(requiredPerm)) {
+        if (!player.hasPermission(requiredPerm) && !player.hasPermission("ourteam.use") && !player.isOp()) {
             player.sendMessage(plugin.colorize("&cYou do not have the '" + requiredPerm + "' permission."));
             return;
         }
@@ -592,9 +592,9 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
 
         boolean isWarp = args[0].equalsIgnoreCase("warp");
 
-        // Permission check
+        // Permission check (allow standard/default players or custom permissions seamlessly)
         String requiredPerm = isWarp ? "ourteam.warp" : "ourteam.home";
-        if (!player.hasPermission(requiredPerm)) {
+        if (!player.hasPermission(requiredPerm) && !player.hasPermission("ourteam.use") && !player.isOp()) {
             player.sendMessage(plugin.colorize("&cYou do not have the '" + requiredPerm + "' permission."));
             return;
         }
@@ -633,7 +633,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         }
 
         String requiredPerm = isWarp ? "ourteam.delwarp" : "ourteam.delhome";
-        if (!player.hasPermission(requiredPerm)) {
+        if (!player.hasPermission(requiredPerm) && !player.hasPermission("ourteam.use") && !player.isOp()) {
             player.sendMessage(plugin.colorize("&cYou do not have the '" + requiredPerm + "' permission."));
             return;
         }
@@ -657,11 +657,14 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
     }
 
     private int getMaxHomes(Player player) {
-        if (player.hasPermission("ourteam.homes.unlimited")) {
+        if (player.hasPermission("ourteam.homes.unlimited") || player.hasPermission("ourteam.home.unlimited")) {
             return 999;
         }
         for (int i = 100; i >= 1; i--) {
-            if (player.hasPermission("ourteam.homes." + i)) {
+            if (player.hasPermission("ourteam.homes." + i) || 
+                player.hasPermission("ourteam.home." + i) || 
+                player.hasPermission("ourteam." + i + ".home") || 
+                player.hasPermission("ourteam." + i + ".homes")) {
                 return i;
             }
         }
@@ -669,11 +672,14 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
     }
 
     private int getMaxWarps(Player player) {
-        if (player.hasPermission("ourteam.warps.unlimited")) {
+        if (player.hasPermission("ourteam.warps.unlimited") || player.hasPermission("ourteam.warp.unlimited")) {
             return 999;
         }
         for (int i = 100; i >= 1; i--) {
-            if (player.hasPermission("ourteam.warps." + i)) {
+            if (player.hasPermission("ourteam.warps." + i) || 
+                player.hasPermission("ourteam.warp." + i) || 
+                player.hasPermission("ourteam." + i + ".warp") || 
+                player.hasPermission("ourteam." + i + ".warps")) {
                 return i;
             }
         }
