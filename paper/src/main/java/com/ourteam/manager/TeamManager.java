@@ -108,7 +108,13 @@ public class TeamManager {
     }
 
     public Collection<Team> getAllTeams() {
-        return teams.values();
+        List<Team> activeTeams = new ArrayList<>();
+        for (Team team : teams.values()) {
+            if (!team.isSystemLocked()) {
+                activeTeams.add(team);
+            }
+        }
+        return activeTeams;
     }
 
     public Map<UUID, Team> getTeams() {
