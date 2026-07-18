@@ -137,7 +137,7 @@ public class GUIListener implements Listener {
                 player.closeInventory();
                 
                 java.util.List<Team> invitedTeams = new java.util.ArrayList<>();
-                for (Team t : plugin.getTeamManager().getTeams().values()) {
+                for (Team t : plugin.getTeamManager().getAllTeams()) {
                     if (t.hasInvite(player.getUniqueId())) {
                         invitedTeams.add(t);
                     }
