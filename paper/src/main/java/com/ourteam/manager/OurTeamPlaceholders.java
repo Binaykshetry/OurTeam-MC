@@ -209,6 +209,9 @@ public class OurTeamPlaceholders extends PlaceholderExpansion {
             if (type.equalsIgnoreCase("name") || type.equalsIgnoreCase("displayname") || type.equalsIgnoreCase("tag")) {
                 return "N/A";
             }
+            if (type.equalsIgnoreCase("score") || type.equalsIgnoreCase("points")) {
+                return "0";
+            }
             return "";
         }
 
@@ -224,6 +227,7 @@ public class OurTeamPlaceholders extends PlaceholderExpansion {
             case "open":
                 return "false"; // Defaulting to invite-only registration
             case "score":
+            case "points":
                 return String.valueOf(team.getCachedScore());
             case "money":
                 return String.format("%.2f", team.getBankBalance());
