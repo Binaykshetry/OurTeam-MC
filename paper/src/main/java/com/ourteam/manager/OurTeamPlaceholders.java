@@ -193,7 +193,7 @@ public class OurTeamPlaceholders extends PlaceholderExpansion {
         // 6. InTeam general check (context-dependent)
         if (params.equalsIgnoreCase("inteam")) {
             Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
-            return team != null ? "Yes" : "No";
+            return (team != null && !team.isSystemLocked()) ? "Yes" : "No";
         }
 
         // 7. General player-context placeholder
@@ -205,9 +205,9 @@ public class OurTeamPlaceholders extends PlaceholderExpansion {
      * Resolves the requested type parameter for a specific Team.
      */
     private String getTeamPlaceholder(Team team, OfflinePlayer contextPlayer, String type) {
-        if (team == null) {
+        if (team == null || team.isSystemLocked()) {
             if (type.equalsIgnoreCase("name") || type.equalsIgnoreCase("displayname") || type.equalsIgnoreCase("tag")) {
-                return "No Team";
+                return "N/A";
             }
             return "";
         }
