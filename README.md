@@ -1,222 +1,344 @@
-# 🏆 OurTeam | Professional & Competitive Minecraft Guilds System
+# 🏆 OurTeam | Advanced Minecraft Teams, Guilds & Dynamic Leaderboards
 
-OurTeam is a high-performance, enterprise-grade competitive team/faction-guilds plugin built to power high-concurrency **Paper, Purpur, and Spigot (1.20 - 1.21+)** servers. Engineered with modern architectural design, **OurTeam** balances pristine graphical GUIs, a dynamic micro-economy bank system, automated team settings, and an highly optimized, ultra-scalable in-memory score caching registry designed to hold **stable 20 TPS performance** even at extreme player configurations.
+**OurTeam** is an all-in-one, enterprise-grade Teams, Guilds, and Leaderboards plugin engineered for high-concurrency **Paper, Purpur, and Spigot (1.20 - 1.21+)** servers. 
 
----
-
-## ✨ Outstanding Features & Capabilities
-
-*   **⚡ 20-TPS Immunity Cache Registry:** Roster-based checks, bank balances, and PAPI query calculations are conducted entirely in a fast, thread-safe, memory-mapped local layout to prevent database locking or main-thread bottlenecks.
-*   **📂 Multi-engine Local JSON Persistence:** Thread-safe, atomic GSON structure writes team profiles and transactional rosters to direct individual files instantly upon saves, safely avoiding any data corruption or race conditions.
-*   **💼 Enterprise-Grade Guild Economy (Team Bank):** Native Vault economy integration supports direct quick deposits/withdrawals or custom chat-prompted transactions. It includes automatic recurring **compound interest distribution** and precise deposit-contribution logging.
-*   **🌌 Dynamic Home & Warp Navigation:** Complete with sound indicators, aesthetic portal particle trails, and standard **cooldown timers / movement-damage disruption logic** to maintain strict PvP and gameplay balancing.
-*   **👁️ Visual Control Panels (GUI Engine):** Features elegant, responsive double-row and custom-grid inventories built for rapid, mouse-driven team administration.
-*   **📁 Direct Interactive Team Directory:** Access all active teams in the server via `/team list` with an interactive menu. Players can browse teams and **instantly send active requests** by left/right-clicking on any team card.
-*   **🛡️ Role-based Permission Hierarchy:** Four organizational ranks (Owner, Admin, Moderator, Member) manage specific command actions, controlled by a customizable `teampermissions.yml` configuration.
-*   **💬 Dual-Channel Team Chat:** A dedicated private communication frequency with custom formatting and built-in setting checks that auto-reverts players to global chat if a team's moderators toggle their private channel off.
+Designed with modern aesthetic GUIs, native **SQLite (`data.db`) & MySQL** persistence, full **PlaceholderAPI (`%ourteam_*%` & `%nteam_*%`)** expansions, and a standalone **Leaderboard GUI system (`/leaderboard`, `/lb`)** with dual **ajLeaderboards (`ajlb`)** and built-in database support.
 
 ---
 
-## 🏎️ Key Structural Columns
+## 🌟 Key Highlights & Features
 
-### 1. Hardened TeamScore™ Competition Algorithm
-To eliminate passive alternate account padding and preserve actual competitive integrity on leaderboard scoreboards, **OurTeam** calculates live competitive standings using a unique, triple-axis validation check:
-
-$$TeamScore = \sum (ActiveMemberPoints) + \frac{BankBalance}{BankScaleValue} + PvPPoints$$
-
-*   **Roster Member Validation & Decay:** Active roster players award a base point value (default: `+50` points). The core registry continuously queries the `getLastPlayed()` attribute. Any account inert/offline for longer than **24 hours** automatically decays to a **0-point contribution**—guaranteeing that active, grinding guilds dominate the standings over dead, inflated ones.
-*   **Financial Liquid Conversions:** Cash deposited inside the Team Bank translates to permanent leaderboard standing score. For example, at `10000.0` conversion, every `$10,000` accrued triggers `+1` TeamScore point.
-*   **Pro-PvP Active Combat Grinding:** Defeating an enemy clan member injects instant score credits to the team pool (default: `+5`) and extracts score from the victim's pool (default: `-2`).
-*   **Anti-Farming Exploitation Protection:** Uses a sliding 60-second in-memory tracker to block repeated farming of the same target, logging fraudulent kills as 0-point spam events.
-*   **External Integration Events:** Dedicated admin command entries allow seamless integration with automated server events (e.g., King of the Hill wins, Dungeons, Envoy conquers) via direct console commands.
-
----
-
-## 📋 Comprehensive PlaceholderAPI Expansion Guide
-
-OurTeam hosts a complete native **PlaceholderAPI (PAPI)** expansion directory under the `%ourteam_*%` namespace. It exposes everything required to feed real-time team stats into scoreboards (e.g. FeatherBoard, TitleManager), dynamic TAB headers, chat formatting engines, or holograms.
-
-### 1. Play-Context Placeholders (Evaluates for the Subject Player)
-
-| Placeholder | Outputs | Example Return Value |
-| :--- | :--- | :--- |
-| `%ourteam_inteam%` | Custom offline check indicator | `Yes` / `No` |
-| `%ourteam_name%` | Direct team alphabetical identity | `AlphaFaction` / `No Team` |
-| `%ourteam_tag%` | Styled short team label | `AlphaFaction` |
-| `%ourteam_displayname%` | Normalized team descriptor | `AlphaFaction` |
-| `%ourteam_description%` | Custom descriptive block | `The undisputed champions!` |
-| `%ourteam_score%` | Cumulative calculated score weight | `3528` |
-| `%ourteam_money%` | Double-precision undivided bank account | `25482.50` |
-| `%ourteam_moneyshort%` | Compact scientific numeric conversion | `25.5k` / `1.2M` |
-| `%ourteam_members%` | Active count of players on team roster | `6` |
-| `%ourteam_online%` | Real-time concurrent online member count | `3` |
-| `%ourteam_maxmembers%` | Roster soft-cap limit based on level | `8` |
-| `%ourteam_onlinelist%` | Names of all currently online teammates | `Notch, Dinnerbone` |
-| `%ourteam_offlinelist%` | Custom offline listing of teammates | `Jeb_` |
-| `%ourteam_level%` | Roster competitive leveling tier | `4` |
-| `%ourteam_maxmoney%` | Account threshold capacity limit | `200000.00` |
-| `%ourteam_maxwarps%` | Total allowed warp checkpoints | `5` |
-| `%ourteam_pvp%` | Friendly fire flag status | `true` / `false` |
-| `%ourteam_rank%` | Role tier of the querying player | `MODERATOR` |
-| `%ourteam_title%` | Localized role title of the player | `Moderator` |
-| `%ourteam_owners%` | Clan leader's real-time username | `Steve` |
-| `%ourteam_admins%` | Comma-separated owners and admins | `Steve, Notch` |
-| `%ourteam_defaultmembers%` | Comma-separated list of standard tier players | `Dinnerbone, Jeb_` |
-| `%ourteam_positionscore%` | Top-Score ranking position on the server | `1` |
-| `%ourteam_positionbal%` | Wealth ranking position on the server | `3` |
-| `%ourteam_positionmembers%` | Roster-size ranking position on the server | `2` |
-| `%ourteam_hashome%` | Home coordinates established state | `Yes` / `No` |
-| `%ourteam_teamchat%` | Active chat toggle tracking channel | `Team` / `Global` |
-
-### 2. Leaderboard & Universal Standings (Rank-Position Placeholders)
-Allows displaying global leaderboard rankings for top teams in holograms or sidebar widgets. Simply replace `<property>` with any general field (e.g., `name`, `score`, `money`, `members`) and `<rank>` with an index (e.g., `1`, `2`, `3`):
-
-*   **🏆 Placeholders Ordered by TeamScore Standings:**
-    *   `%ourteam_position_name_<rank>%` — e.g. `%ourteam_position_name_1%` ➔ Returns `DeltaGroup`
-    *   `%ourteam_position_score_<rank>%` — e.g. `%ourteam_position_score_1%` ➔ Returns `12980`
-    *   `%ourteam_position_money_<rank>%` — e.g. `%ourteam_position_money_2%` ➔ Returns `50000.00`
-*   **💰 Placeholders Ordered by Wealth / Bank Balance:**
-    *   `%ourteam_balanceposition_name_<rank>%` — e.g. `%ourteam_balanceposition_name_1%` ➔ Returns name of wealthiest team.
-    *   `%ourteam_balanceposition_money_<rank>%` — e.g. `%ourteam_balanceposition_money_1%` ➔ Returns `157942.50`
-*   **👥 Placeholders Ordered by Faction Roster Sizes:**
-    *   `%ourteam_membersposition_name_<rank>%` — e.g. `%ourteam_membersposition_name_1%` ➔ Returns name of largest group.
-    *   `%ourteam_membersposition_members_<rank>%` — e.g. `%ourteam_membersposition_members_1%` ➔ Returns `18`
-
-### 3. Static Multi-Target Mapping (Queries Specific Targets)
-Evaluate calculations for specific remote targets irrespective of who is querying:
-
-*   **🏡 Query by Raw Team Name:**
-    *   `%ourteam_static_<property>_<teamName>%` — e.g. `%ourteam_static_score_DeltaGroup%` ➔ Returns `12980`
-    *   `%ourteam_static_money_DeltaGroup%` ➔ Returns `50000.00`
-*   **👤 Query by Player Account Target Name:**
-    *   `%ourteam_staticplayer_<property>_<playerName>%` — e.g. `%ourteam_staticplayer_name_Notch%` ➔ Returns the name of Notch's team.
-    *   `%ourteam_staticplayer_rank_Notch%` ➔ Returns Notch's position/role inside their respective team.
-
-### 4. Global System Toggle Query Interface
-
-*   `%ourteam_command_<feature_or_command_name>%` — Evaluates if a command action is enabled in the global configuration (returns `on`/`off`):
-    *   *Examples*: `%ourteam_command_create%`, `%ourteam_command_bank%`, `%ourteam_command_teleport%`, `%ourteam_command_echest%`.
+- ⚡ **20 TPS Immunity Architecture:** Roster queries, bank accounts, and leaderboard ranking calculations are backed by a high-speed memory cache to guarantee zero main-thread lag.
+- 💾 **Dual Database Storage Engine (`data.db` & MySQL):**
+  - **SQLite by Default:** All team and player statistics are persistently stored in `plugins/OurTeam/data.db`.
+  - **MySQL Support:** Built-in connection pooling for multi-server networks and BungeeCord/Velocity setups.
+  - **Auto-Migration:** Automatically converts legacy `teams.json` or `teams/` directory files to database tables on launch.
+- 🎨 **Modern Visual GUI Engine:** Custom BananaSMP-style menus for discovery, creation confirmation, team dashboard, member management, statistics, and alliances.
+- 📊 **Dynamic Leaderboard System (`/leaderboard` or `/lb`):**
+  - Native replacement for DeluxeMenus with multi-page GUI navigation.
+  - Main menu (36 slots) featuring custom category items and descriptions.
+  - Category pages (54 slots) showing 28 player heads per page with real player skins, formatted numbers (`35.1b`, `12.5m`, `800k`), previous/next page controls, and live refresh.
+  - **Dual-Mode Data Resolution:** Evaluates `ajLeaderboards` (`ajlb`) placeholders dynamically, with seamless automatic fallback to OurTeam's native database.
+  - **100% Configurable:** Add unlimited new leaderboards, edit items, slots, titles, and lores in `LeaderboardGUI/leaderboards.yml`.
+- 🧩 **Comprehensive PlaceholderAPI Support:**
+  - Fully registered under both `%ourteam_*%` and `%nteam_*%`.
+  - Team leaderboards, player leaderboards, personal leaderboard ranks, and individual/team stats.
+- 🏦 **Team Economy & Bank:** Vault-backed banking with compound interest, customizable deposit/withdraw interfaces, and passive hourly earnings.
+- ⚔️ **PvP & Battle Protection:** Friendly fire toggles, ally damage reduction, TNT protection, and splash potion safety.
+- 🌌 **Teleportation System:** Named team warps and home checkpoints with particle trails, warmup delays, and combat-damage cancellation.
+- 📦 **Shared Virtual Enderchest:** Multi-tier team Enderchest with customizable sizes (up to 54 slots) and blacklist protection.
 
 ---
 
-## 🛠️ Complete Command Directory & Permissions
+## 🖥️ Interactive GUI System Overview
 
-### Player Command Hierarchy (Permission Node: `ourteam.use`)
+### 1. No-Team Discovery Hub (`/team` when without a team)
+| Slot | Item | Action |
+| :---: | :--- | :--- |
+| **12** | **Chest** (`TEAM INVITES`) | Opens received team invitations |
+| **14** | **Lime Bed** (`CREATE TEAM`) | Opens the team creation confirmation dialog |
 
-| Primary Command | Alias / Subcommand | Action Description |
-| :--- | :--- | :--- |
-| `/team create <name>` | `c` | Registers and creates a new Team roster under your ownership. |
-| `/team invite <player>` | `i` | Invites another player to join your team (Requires Invite Perms). |
-| `/team join <team>` | `j` | Directly joins a team with an active invite, or OPEN JOIN teams. |
-| `/team request <team>` | `req` | Sends a pending Join Request to a private team. |
-| `/team leave` | `l` | Resigns your membership and leaves your current team roster. |
-| `/team kick <player>` | `k` | Evicts a member from your team roster (Admin/Owner only). |
-| `/team disband` | `dis` | Permanently deletes your team registry (Owner only). |
-| `/team promote <player>` | `prom` | Promotes a teammate to the next higher rank status. |
-| `/team demote <player>` | `dem` | Demotes a teammate to a lower rank tier. |
-| `/team chat` | `c` | Toggles your chat mode between Dedicated Team-Chat and Public-Chat. |
-| `/team msg <msg...>` | `m` | Direct private messaging channel to your online teammates. |
-| `/team pvp` | `ff` | Toggles whether teammates can deal damage to each other. |
-| `/team bank` | `b` | Opens the GUI Team Bank with interest ledger information. |
-| `/team list` | `l` | Opens the ALL ACTIVE TEAMS GUI to browse teams or send requests. |
-| `/team sethome [name]` | — | Establishes a home checkpoint at your current location. |
-| `/team home [name]` | — | Initiates teleport sequence to the selected team home. |
-| `/team delhome [name]`| — | Deletes a customized team home checkpoint. |
-| `/team setwarp <name>` | — | Sets a dynamic team warp point accessible to teammates. |
-| `/team warp <name>` | — | Teleports player to the specified warp checkpoint location. |
-| `/team delwarp <name>` | — | Revokes and deletes a team warp checkpoint point. |
-| `/team top` | — | Renders a rich list of the top active teams sorted by Score. |
-| `/team gui` | `settings` | Opens the main Graphical Settings Menu for customization. |
+### 2. Create Team Confirmation Dialog
+- **Layout:** 1 row (9 slots).
+- **Slots 0-3:** Red Stained Glass Pane (`CANCEL`) &rarr; returns to Hub.
+- **Slot 4:** Lime Stained Glass Pane (`CONFIRM`) &rarr; prompts in chat: `TEAMS » Write the team tag in the chat (Max Length 12)`.
+- **Slots 5-8:** Red Stained Glass Pane (`CANCEL`).
 
-### Administrative Commands (Permission Node: `ourteam.admin`)
+### 3. Main Team Dashboard (`/team`)
+| Slot | Item | Function |
+| :---: | :--- | :--- |
+| **4** | **Red Bed** | `TEAM INVITES` - Manage pending requests & outgoing invites |
+| **10** | **Chest** | `TEAM BANK` - Deposit/withdraw funds and view balance |
+| **11** | **Clock** | `TEAM STATS` - View team statistics & member breakdown |
+| **12** | **Orange Bed** | `TEAM HOME` - Teleport to team home spawn |
+| **13** | **Ender Chest** | `TEAM ENDERCHEST` - Shared virtual team inventory |
+| **14** | **Book** | `TEAM MEMBERS` - Roster management & rank controls |
+| **15** | **Bell** | `TEAM SETTINGS` - Friendly fire, privacy, and team toggles |
+| **16** | **Iron Sword** | `TEAM ALLIES` - Diplomatic relations & alliance management |
 
-| Admin Command | Alias | Action Description |
-| :--- | :--- | :--- |
-| `/teamsadmin r` | `reload` | Instantly reloads all configurations, rules and files. |
-| `/teamsadmin score add <t> <val>` | — | Directly awards score points to a team's permanent total. |
-| `/teamsadmin score take <t> <val>`| — | Penetrates/deducts score points from a team's cache. |
-| `/teamsadmin score set <t> <val>` | — | Rewrites and sets a team's score parameter to a strict value. |
-| `/teamsadmin resetbank <team>` | — | Clears all cash balance holdings belonging to a target team. |
-| `/teamsadmin info <team>` | — | Runs deep structural audits on team storage configurations in chat. |
+### 4. Team Statistics Overview (`Teams | Statistics`)
+5-row menu displaying core team metrics:
+- **Slot 10:** Lectern (`LEVELS`)
+- **Slot 12:** Gold Ingot (`MONEY`)
+- **Slot 14:** Clock (`PLAYTIME`)
+- **Slot 16:** Diamond Sword (`KILLS`)
+- **Slot 28:** Diamond Helmet (`DEATHS`)
+- **Slot 30:** Wooden Sword (`KDR`)
+- **Slot 32:** Dirt (`PLACED BLOCKS`)
+- **Slot 34:** Diamond Pickaxe (`BROKEN BLOCKS`)
+- **Slot 40:** Barrier (`BACK`)
+- Clicking any category opens the **Member Contribution Detail GUI** displaying each member's skull with exact stats (`This player has placed X blocks.`, etc.).
 
 ---
 
-## 🎨 Professional Configuration File (`config.yml`)
+## 📈 Leaderboard System (`/leaderboard`, `/lb`)
 
-Customize parameters, telemetry, banking, limits, and sounds instantly:
+Access global rankings anytime using `/leaderboard`, `/lb`, or `/leaderboards`.
+
+### Main Leaderboard Menu (36 slots)
+- **Slot 11:** `EMERALD` &rarr; **MOST MONEY** (`/lb money`)
+- **Slot 12:** `PAPER` &rarr; **MOST VOTES** (`/lb votes`)
+- **Slot 13:** `DIAMOND_PICKAXE` &rarr; **BLOCKS MINED** (`/lb mined`)
+- **Slot 14:** `DIAMOND_HELMET` &rarr; **KD RATIO** (`/lb kd`)
+- **Slot 15:** `CLOCK` &rarr; **PLAYTIME** (`/lb playtime`)
+- **Slot 20:** `AMETHYST_SHARD` &rarr; **SHARDS** (`/lb shards`)
+- **Slot 21:** `COMPASS` &rarr; **DISTANCE TRAVELLED** (`/lb distance`)
+- **Slot 22:** `NETHERITE_HELMET` &rarr; **MOST DEATHS** (`/lb deaths`)
+- **Slot 23:** `MILK_BUCKET` &rarr; **MOST COINS** (`/lb coins`)
+- **Slot 24:** `NETHERITE_SWORD` &rarr; **MOST KILLS** (`/lb kills`)
+- **Slot 4:** `WHITE_BANNER` &rarr; **TOP TEAMS** (`/lb teams`)
+- *Also includes `placed`, `mobkills`, and `killstreaks`.*
+
+### Category Ranking Page (54 slots)
+- **28 Entries Per Page:** Slots `10-16`, `19-25`, `28-34`, `37-43`.
+- **Player Heads:** Displays player skulls with custom lore:
+  ```
+  &a#1 PlayerName
+  &7Leaderboard
+
+  &7Position: #1
+  &7Money: &a35.1b
+  ```
+- **Controls:**
+  - **Slot 48:** `RED_STAINED_GLASS_PANE` &rarr; `PREVIOUS PAGE`
+  - **Slot 49:** `BELL` &rarr; `REFRESH` (Live refresh current page)
+  - **Slot 50:** `LIME_STAINED_GLASS_PANE` &rarr; `NEXT PAGE`
+  - **Slot 45:** `ARROW` &rarr; `◀ BACK` (Return to main leaderboards)
+
+---
+
+## 🗄️ Database & Storage Configuration
+
+Data storage is configured in [`config.yml`](file:///c:/Users/barsha/Desktop/ourteam-plugin-studio/paper/src/main/resources/config.yml) under `storage:`:
 
 ```yaml
-# =============================================================================
-#              OurTeam - Premium Guilds & Roster Ecosystem File
-# =============================================================================
+storage:
+  # Storage backends: SQLITE, MYSQL, or JSON
+  type: SQLITE
 
-# Dynamic Leaderboard Standing calculations config
-team-score:
-  points-per-active-member: 50
-  active-member-timeframe-hours: 24
-  currency-per-point: 10000.0
-  points-per-kill: 5
-  points-lost-per-death: 2
-  spam-threshold-seconds: 60
+  # SQLite configuration (creates data.db in plugin directory)
+  sqlite:
+    file: "data.db"
 
-# Teleport delays, movement disruption and particle animations
-cooldowns-and-teleportation:
-  teleport-cooldown: 45                 # General teleport cooldown (in seconds)
-  warp-warmup-seconds: 5                # Teleport delay interval (in seconds)
-  cancel-on-movement: true              # Cancel teleport if player moves
-  cancel-on-damage: true                # Cancel teleport if player takes damage
-  teleport-particle: "PORTAL"           # Particle types spawned at warmup tick
-  teleport-sound: "ENTITY_ENDERMAN_TELEPORT" # Sound played upon successful teleport
-  max-homes-per-team: 3                 # Max homing locations per team
-  max-warps-per-team: 5                 # Max warps per team
-
-# Guild Banking, compound interest ledger
-bank-settings:
-  starting-balance: 0.0
-  max-balance-cap: 10000000.0
-  paytoggle-by-default: true
-  interest:
-    enabled: true
-    rate-percent: 0.5                   # Teammates gain 0.5% interest on bank wealth
-    interval-seconds: 3600              # Interest accrued and calculated every hour
-    minimum-balance-required: 1000.0    # Minimum funds required to gain accrued interest
+  # MySQL configuration (for networks / cross-server syncing)
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "ourteam_db"
+    username: "administrator"
+    password: "secure_password_here"
+    use-ssl: false
+    pool-properties:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout-ms: 30000
+      idle-timeout-ms: 600000
+      max-lifetime-ms: 1800000
 ```
+
+### Database Tables:
+1. **`ourteam_teams`**: Stores team ID, team name, disbanded status, and JSON data (members, roles, bank balance, warps, level, stats).
+2. **`ourteam_players`**: Tracks player UUID, username, kills, deaths, blocks placed, blocks broken, mob kills, playtime (ms), grinding points, and last seen.
 
 ---
 
-## 🛠️ GitHub-Based Packaging & Compilation Instruction
+## 📋 Comprehensive PlaceholderAPI Guide
 
-Developing and deploying **OurTeam** is automated using standard dependency tools. Follow these guidelines to compile and deploy the `.jar` files:
+Registered under both `%ourteam_*%` and `%nteam_*%`.
 
-### Prerequisites
-*   A Java SE Development Kit (**JDK 21** or newer)
-*   **Apache Maven** installed on your server or local path.
+### 1. Team Leaderboards
+Format: `%ourteam_leaderboard_<stat>_<name|value>_<pos>%` or `%ourteam_top_team_<stat>_<name|value>_<pos>%`
 
-### 1. Manual Compilation Steps
-Build the shaded, ready-to-run binary in your command shell execution channel:
+| Statistic | Team Name Placeholder | Team Value Placeholder |
+| :--- | :--- | :--- |
+| **Blocks Placed / Build** | `%ourteam_leaderboard_place_name_1%` | `%ourteam_leaderboard_place_value_1%` |
+| **Blocks Broken / Mined** | `%ourteam_leaderboard_break_name_1%` | `%ourteam_leaderboard_break_value_1%` |
+| **Mob Kills** | `%ourteam_leaderboard_mobkill_name_1%` | `%ourteam_leaderboard_mobkill_value_1%` |
+| **K/D Ratio** | `%ourteam_leaderboard_kd_name_1%` | `%ourteam_leaderboard_kd_value_1%` |
+| **Kills** | `%ourteam_leaderboard_kills_name_1%` | `%ourteam_leaderboard_kills_value_1%` |
+| **Deaths** | `%ourteam_leaderboard_deaths_name_1%` | `%ourteam_leaderboard_deaths_value_1%` |
+| **Team Bank Balance** | `%ourteam_leaderboard_balance_name_1%` | `%ourteam_leaderboard_balance_value_1%` |
+| **Team Level** | `%ourteam_leaderboard_level_name_1%` | `%ourteam_leaderboard_level_value_1%` |
+| **Team Score / Points** | `%ourteam_leaderboard_score_name_1%` | `%ourteam_leaderboard_score_value_1%` |
+| **Member Count** | `%ourteam_leaderboard_members_name_1%` | `%ourteam_leaderboard_members_value_1%` |
 
+> **Legacy BetterTeams / DeluxeMenus Compatibility:**
+> - `%ourteam_position_name_1%`, `%ourteam_position_score_1%`
+> - `%ourteam_balanceposition_name_1%`, `%ourteam_balanceposition_money_1%`
+> - `%ourteam_membersposition_name_1%`, `%ourteam_membersposition_members_1%`
+
+---
+
+### 2. Normal (Player) Leaderboards
+Format: `%ourteam_top_<stat>_<name|value>_<pos>%` or `%ourteam_top_player_<stat>_<name|value>_<pos>%`
+
+| Statistic | Player Name Placeholder | Player Value Placeholder |
+| :--- | :--- | :--- |
+| **Top Blocks Placed / Build** | `%ourteam_top_place_name_1%` | `%ourteam_top_place_value_1%` |
+| **Top Blocks Broken / Mined** | `%ourteam_top_break_name_1%` | `%ourteam_top_break_value_1%` |
+| **Top Mob Kills** | `%ourteam_top_mobkill_name_1%` | `%ourteam_top_mobkill_value_1%` |
+| **Top K/D Ratio** | `%ourteam_top_kd_name_1%` | `%ourteam_top_kd_value_1%` |
+| **Top Kills** | `%ourteam_top_kills_name_1%` | `%ourteam_top_kills_value_1%` |
+| **Top Deaths** | `%ourteam_top_deaths_name_1%` | `%ourteam_top_deaths_value_1%` |
+| **Top Killstreak** | `%ourteam_top_killstreak_name_1%` | `%ourteam_top_killstreak_value_1%` |
+| **Top Playtime** | `%ourteam_top_playtime_name_1%` | `%ourteam_top_playtime_value_1%` |
+| **Top Balance / Money** | `%ourteam_top_money_name_1%` | `%ourteam_top_money_value_1%` |
+
+---
+
+### 3. Personal Player Rankings (Your Position)
+Shows the numerical rank position of the viewing player:
+- `%ourteam_rank_kills%` &rarr; Your rank position in Kills (e.g. `1`, `14`)
+- `%ourteam_rank_deaths%` &rarr; Your rank position in Deaths
+- `%ourteam_rank_kd%` &rarr; Your rank position in K/D ratio
+- `%ourteam_rank_place%` &rarr; Your rank position in Blocks Placed
+- `%ourteam_rank_break%` &rarr; Your rank position in Blocks Broken
+- `%ourteam_rank_mobkill%` &rarr; Your rank position in Mob Kills
+- `%ourteam_rank_playtime%` &rarr; Your rank position in Playtime
+- `%ourteam_rank_money%` &rarr; Your rank position in Balance
+- `%ourteam_team_rank%` &rarr; Your team's rank position among all teams
+
+---
+
+### 4. Player Individual Statistics
+- `%ourteam_place%` / `%ourteam_build%` &rarr; Blocks placed
+- `%ourteam_break%` / `%ourteam_mined%` &rarr; Blocks broken
+- `%ourteam_mobkill%` &rarr; Mob kills
+- `%ourteam_kd%` &rarr; K/D ratio
+- `%ourteam_kills%` &rarr; Player PvP kills
+- `%ourteam_deaths%` &rarr; Deaths
+- `%ourteam_killstreak%` &rarr; Current killstreak
+- `%ourteam_best_killstreak%` &rarr; Best killstreak
+- `%ourteam_playtime%` &rarr; Playtime (e.g. `2d 4h` or `45m`)
+
+---
+
+### 5. Player's Team Statistics
+- `%ourteam_name%` / `%ourteam_tag%` &rarr; Team name
+- `%ourteam_score%` &rarr; Team score points
+- `%ourteam_level%` &rarr; Team level tier
+- `%ourteam_balance%` / `%ourteam_money%` &rarr; Bank balance
+- `%ourteam_moneyshort%` &rarr; Formatted balance (`25.5k`, `1.2m`)
+- `%ourteam_members%` &rarr; Total members count
+- `%ourteam_online%` &rarr; Online members count
+- `%ourteam_maxmembers%` &rarr; Maximum allowed members
+- `%ourteam_team_place%` &rarr; Total team blocks placed
+- `%ourteam_team_break%` &rarr; Total team blocks broken
+- `%ourteam_team_mobkill%` &rarr; Total team mob kills
+- `%ourteam_team_kd%` &rarr; Combined team K/D ratio
+- `%ourteam_team_kills%` &rarr; Total team kills
+- `%ourteam_team_deaths%` &rarr; Total team deaths
+- `%ourteam_pvp%` &rarr; Friendly fire status (`true`/`false`)
+- `%ourteam_rank%` &rarr; Player's role in the team (`OWNER`, `ADMIN`, `MODERATOR`, `MEMBER`)
+
+---
+
+## 🛠️ Commands & Permissions Directory
+
+### Player Commands (`ourteam.use`)
+| Command | Aliases | Description |
+| :--- | :--- | :--- |
+| `/team` | `/t`, `/teams` | Opens the Main Team Dashboard (or Discovery Hub if no team) |
+| `/team create <name>` | `/team c` | Creates a new team with specified tag |
+| `/team invite <player>` | `/team i` | Invites a player to join your team |
+| `/team join <team>` | `/team j` | Accepts an invite or joins an open team |
+| `/team request <team>` | `/team req` | Sends a join request to a team |
+| `/team leave` | `/team l` | Leaves your current team |
+| `/team kick <player>` | `/team k` | Kicks a member from the team (Admin/Owner) |
+| `/team disband` | `/team dis` | Disbands your team permanently (Owner only) |
+| `/team promote <player>` | `/team prom` | Promotes a teammate's rank |
+| `/team demote <player>` | `/team dem` | Demotes a teammate's rank |
+| `/team chat` | `/team c` | Toggles between Team Chat and Global Chat |
+| `/team msg <message>` | `/team m` | Sends a private message to online teammates |
+| `/team pvp` | `/team ff` | Toggles friendly fire damage |
+| `/team bank` | `/team b` | Opens the Team Bank GUI |
+| `/team echest` | `/team ec` | Opens the shared Team Enderchest |
+| `/team sethome [name]` | — | Sets a team home location |
+| `/team home [name]` | — | Teleports to a team home |
+| `/team delhome [name]` | — | Deletes a team home |
+| `/team setwarp <name>` | — | Sets a public/team warp point |
+| `/team warp <name>` | — | Teleports to a warp point |
+| `/team delwarp <name>` | — | Deletes a warp point |
+| `/team list` | — | Opens the active teams directory |
+| `/team top` | — | Opens the team leaderboard |
+| `/leaderboard` | `/lb`, `/leaderboards` | Opens the Main Leaderboard GUI |
+| `/leaderboard <category>` | `/lb <category>` | Directly opens a leaderboard category |
+
+### Admin Commands (`ourteam.admin`)
+| Command | Alias | Description |
+| :--- | :--- | :--- |
+| `/adminteam reload` | `/ta reload` | Reloads all configurations, messages, and leaderboards |
+| `/leaderboard reload` | `/lb reload` | Reloads leaderboard categories and menus |
+| `/adminteam disband <team>` | — | Force disbands any team |
+| `/adminteam forcejoin <player> <team>` | — | Force adds a player into a team |
+| `/adminteam forcekick <player>` | — | Force kicks a player from their team |
+| `/adminteam transfer <team> <player>` | — | Transfers team ownership |
+| `/adminteam score add/take/set <team> <amount>` | — | Manually modifies team score |
+| `/adminteam resetbank <team>` | — | Clears a team's bank balance |
+| `/adminteam spy` | — | Toggles Team Chat surveillance for staff |
+
+---
+
+## 🔧 Adding Custom Leaderboards
+
+You can add unlimited new leaderboards directly in [`LeaderboardGUI/leaderboards.yml`](file:///c:/Users/barsha/Desktop/ourteam-plugin-studio/paper/src/main/resources/LeaderboardGUI/leaderboards.yml).
+
+```yaml
+categories:
+  custom_stat:
+    name: "&6&lCUSTOM STAT"
+    icon: DIAMOND
+    slot: 28 # Slot in /leaderboard main menu (-1 for command-only)
+    title: "Custom Stat | Page {page}/{max_page}"
+    description: "custom stat"
+    value_label: "Score"
+    type: PLAYER # or TEAM
+    internal_stat: "kills" # Built-in fallback stat
+    ajlb_name_placeholder: "%ajlb_lb_my_custom_stat_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_my_custom_stat_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Score: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7custom stat leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+```
+
+Run `/lb reload` or `/adminteam reload` to apply changes instantly without a server restart!
+
+---
+
+## 🔨 Compilation & Build Instructions
+
+### Requirements
+- **JDK 21** or higher
+- **Apache Maven 3.8+**
+
+### Build Commands:
 ```bash
-# 1. Navigate to the core plugin directory
+# Navigate to the paper module
 cd paper
 
-# 2. Package and compile shaded libraries
+# Build and package the shaded jar
 mvn clean package
 ```
 
-The resulting optimized compilation file will be generated in `/paper/target/OurTeam-1.0.0.jar`. Copy this file directly into your server's `/plugins` directory.
+The compiled jar will be created at:
+```
+paper/target/OurTeam-1.0.0.jar
+```
 
-### 2. Fully Automated GitHub Actions CI/CD Pipeline
-An automated pipeline configuration file is included at **`.github/workflows/build-plugin.yml`**. It automates building and uploading the artifact upon every code update:
-
-*   **Platform Target:** Standard headless Ubuntu runner (`ubuntu-latest`).
-*   **CI Setup:** Loads **Temurin JDK 21**, configures optimal Maven build caches to accelerate dependency checkups, clean packages the resources, and exports a production-ready `.jar` archive download.
-
----
-
-## 📄 Licensing & Distribution Requirements
-
-OurTeam is licensed and distributed under the permissive **MIT License**. Check the full license description in the [LICENSE](./LICENSE) file contained within the repository. Contributions, forks, and integrations are highly encouraged!
+Copy `OurTeam-1.0.0.jar` into your server's `plugins/` directory and restart.
 
 ---
 
-*Crafted for premium Minecraft communities by the OurTeam Dev Group.*
+## 📜 License
+Distributed under the **MIT License**. See `LICENSE` for details.
