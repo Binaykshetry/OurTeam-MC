@@ -1,10 +1,10 @@
-title: "&#33CCFFTeam Dashboard &7» &f{team}"
+title: "Teams | Menu"
 size: 27
+invites-slot: 4
 bank-slot: 10
-members-slot: 11
-allies-slot: 12
-homes-warps-slot: 13
-echest-slot: 14
-leaderboard-slot: 15
-settings-slot: 16
-leave-slot: 18
+stats-slot: 11
+home-slot: 12
+echest-slot: 13
+members-slot: 14
+settings-slot: 15
+allies-slot: 16

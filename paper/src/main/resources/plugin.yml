@@ -17,6 +17,10 @@ commands:
     aliases: [ta, teamsadmin]
     permission: ourteam.admin
     usage: /adminteam [reload|disband|forcejoin|forcekick|setowner]
+  leaderboard:
+    description: View server and team leaderboards.
+    aliases: [lb, leaderboards]
+    usage: /leaderboard [category]
 
 permissions:
   ourteam.use:

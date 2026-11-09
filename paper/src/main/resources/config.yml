@@ -278,10 +278,15 @@ leveling-system:
 storage:
   # Core data storage backend type.
   # Supported backends:
-  # - JSON (Zero setup, easy-to-use local files located in metadata directories)
-  # - SQLITE (Slightly faster standalone file databank)
-  # - MYSQL (Highly recommended for BungeeCord, Velocity or multi-instance networks)
-  type: JSON
+  # - SQLITE (Stores all teams, players, and leaderboard statistics in data.db)
+  # - MYSQL (Connect to an external MySQL server for networks)
+  # - JSON (Legacy json files)
+  type: SQLITE
+
+  # SQLite Configuration
+  sqlite:
+    # Database filename in the plugin folder (default: data.db)
+    file: "data.db"
 
   # Credentials used only when storage type is MYSQL
   mysql:
@@ -291,7 +296,7 @@ storage:
     username: "administrator"
     password: "secure_password_here"
     # Custom options to fine-tune network clusters
-    use-ssl: true
+    use-ssl: false
     pool-properties:
       maximum-pool-size: 10
       minimum-idle: 2

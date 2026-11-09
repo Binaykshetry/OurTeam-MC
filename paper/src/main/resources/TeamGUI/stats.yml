@@ -1,0 +1,11 @@
+title: "Teams | Statistics"
+size: 45
+levels-slot: 12
+money-slot: 13
+playtime-slot: 14
+kills-slot: 20
+deaths-slot: 21
+kdr-slot: 22
+placed-blocks-slot: 23
+broken-blocks-slot: 24
+back-slot: 40

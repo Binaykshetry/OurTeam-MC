@@ -1,5 +1,4 @@
-title: "&#33CCFFTeam Hub &7» &fDiscovery"
+title: "Teams | Menu"
 size: 27
-create-slot: 11
-list-slot: 13
-invitations-slot: 15
+invites-slot: 12
+create-slot: 14

@@ -1,0 +1,417 @@
+# =============================================================================
+#   OurTeam - Leaderboards Configuration
+#   Customizable Leaderboard Menus, ajLeaderboards (ajlb) & Built-in Support
+# =============================================================================
+
+main_menu:
+  title: "Leaderboards"
+  size: 36
+  border:
+    material: GRAY_STAINED_GLASS_PANE
+    name: " "
+    slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 16, 17, 18, 19, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
+
+category_menu:
+  size: 54
+  entry_slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43]
+  previous_page:
+    slot: 48
+    material: RED_STAINED_GLASS_PANE
+    name: "&c&lPREVIOUS PAGE"
+    lore:
+      - "&7Leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto Continue"
+  refresh:
+    slot: 49
+    material: BELL
+    name: "&e&lREFRESH"
+    lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Click to refresh"
+      - "&7current page"
+      - ""
+      - "&e▶ &e&lCLICK &eto Refresh"
+  next_page:
+    slot: 50
+    material: LIME_STAINED_GLASS_PANE
+    name: "&a&lNEXT PAGE"
+    lore:
+      - "&7Leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto Continue"
+  back_button:
+    slot: 45
+    material: ARROW
+    name: "&c&l◀ BACK"
+    lore:
+      - "&7Click to return to"
+      - "&7the main leaderboards."
+
+# Leaderboard Categories
+# You can change anything, add new categories, reorder slots, or edit lores here!
+categories:
+  money:
+    name: "&a&lMOST MONEY"
+    icon: EMERALD
+    slot: 11
+    title: "Most Money | Page {page}/{max_page}"
+    description: "money"
+    value_label: "Money"
+    type: PLAYER
+    internal_stat: "money"
+    ajlb_name_placeholder: "%ajlb_lb_vault_eco_balance_alltime_{pos}_name%"
+    ajlb_value_placeholder: "%ajlb_lb_vault_eco_balance_alltime_{pos}_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Money: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7money leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  votes:
+    name: "&f&lMOST VOTES"
+    icon: PAPER
+    slot: 12
+    title: "Most Votes | Page {page}/{max_page}"
+    description: "votes"
+    value_label: "Votes"
+    type: PLAYER
+    internal_stat: "votes"
+    ajlb_name_placeholder: "%ajlb_lb_votingplugin_total_alltime_alltime_{pos}_name%"
+    ajlb_value_placeholder: "%ajlb_lb_votingplugin_total_alltime_alltime_{pos}_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Votes: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7votes leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  mined:
+    name: "&b&lBLOCKS MINED"
+    icon: DIAMOND_PICKAXE
+    slot: 13
+    title: "Blocks Mined | Page {page}/{max_page}"
+    description: "blocks mined"
+    value_label: "Blocks Mined"
+    type: PLAYER
+    internal_stat: "mined"
+    ajlb_name_placeholder: "%ajlb_lb_statistic_mine_block_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_statistic_mine_block_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Blocks Mined: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7blocks mined leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  kd:
+    name: "&e&lKD RATIO"
+    icon: DIAMOND_HELMET
+    slot: 14
+    title: "KD Ratio | Page {page}/{max_page}"
+    description: "kd ratio"
+    value_label: "KD Ratio"
+    type: PLAYER
+    internal_stat: "kd"
+    ajlb_name_placeholder: "%ajlb_lb_custom_kd_{pos}_name%"
+    ajlb_value_placeholder: "%ajlb_lb_custom_kd_{pos}_value%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7KD Ratio: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7kd ratio leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  playtime:
+    name: "&b&lPLAYTIME"
+    icon: CLOCK
+    slot: 15
+    title: "Playtime | Page {page}/{max_page}"
+    description: "playtime"
+    value_label: "Playtime"
+    type: PLAYER
+    internal_stat: "playtime"
+    ajlb_name_placeholder: "%ajlb_lb_statistic_time_played_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_statistic_time_played_{pos}_alltime_time%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Playtime: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7playtime leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  shards:
+    name: "&d&lSHARDS"
+    icon: AMETHYST_SHARD
+    slot: 20
+    title: "Most Shards | Page {page}/{max_page}"
+    description: "shards"
+    value_label: "Shards"
+    type: PLAYER
+    internal_stat: "shards"
+    ajlb_name_placeholder: "%ajlb_lb_excellenteconomy_balance_raw_shards_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_excellenteconomy_balance_raw_shards_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Shards: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7shards leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  distance:
+    name: "&e&lDISTANCE TRAVELLED"
+    icon: COMPASS
+    slot: 21
+    title: "Distance Travelled | Page {page}/{max_page}"
+    description: "distance travelled"
+    value_label: "Distance"
+    type: PLAYER
+    internal_stat: "distance"
+    ajlb_name_placeholder: "%ajlb_lb_statistic_walk_one_cm_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_statistic_walk_one_cm_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Distance: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7distance travelled leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  deaths:
+    name: "&7&lMOST DEATHS"
+    icon: NETHERITE_HELMET
+    slot: 22
+    title: "Most Deaths | Page {page}/{max_page}"
+    description: "deaths"
+    value_label: "Deaths"
+    type: PLAYER
+    internal_stat: "deaths"
+    ajlb_name_placeholder: "%ajlb_lb_statistic_deaths_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_statistic_deaths_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Deaths: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7deaths leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  coins:
+    name: "&6&lMOST COINS"
+    icon: MILK_BUCKET
+    slot: 23
+    title: "Most Coins | Page {page}/{max_page}"
+    description: "coins"
+    value_label: "Coins"
+    type: PLAYER
+    internal_stat: "coins"
+    ajlb_name_placeholder: "%ajlb_lb_playerpoints_points_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_playerpoints_points_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Coins: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7coins leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  kills:
+    name: "&c&lMOST KILLS"
+    icon: NETHERITE_SWORD
+    slot: 24
+    title: "Most Kills | Page {page}/{max_page}"
+    description: "kills"
+    value_label: "Kills"
+    type: PLAYER
+    internal_stat: "kills"
+    ajlb_name_placeholder: "%ajlb_lb_statistic_player_kills_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_statistic_player_kills_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Kills: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7kills leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  teams:
+    name: "&d&lTOP TEAMS"
+    icon: WHITE_BANNER
+    slot: 4
+    title: "Top Teams | Page {page}/{max_page}"
+    description: "teams"
+    value_label: "Team Score"
+    type: TEAM
+    internal_stat: "teams"
+    ajlb_name_placeholder: "%ourteam_position_name_{pos}%"
+    ajlb_value_placeholder: "%ourteam_position_score_{pos}%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Team Score: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top teams in the"
+      - "&7team score leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  placed:
+    name: "&a&lBLOCKS PLACED"
+    icon: GRASS_BLOCK
+    slot: -1
+    title: "Blocks Placed | Page {page}/{max_page}"
+    description: "blocks placed"
+    value_label: "Blocks Placed"
+    type: PLAYER
+    internal_stat: "placed"
+    ajlb_name_placeholder: "%ajlb_lb_scoreboard_score_blocks_placed_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_scoreboard_score_blocks_placed_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Blocks Placed: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7blocks placed leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  mobkills:
+    name: "&6&lMOST MOB KILLS"
+    icon: ROTTEN_FLESH
+    slot: -1
+    title: "Most Mob Kills | Page {page}/{max_page}"
+    description: "mob kills"
+    value_label: "Mob Kills"
+    type: PLAYER
+    internal_stat: "mobkills"
+    ajlb_name_placeholder: "%ajlb_lb_statistic_mob_kills_{pos}_alltime_name%"
+    ajlb_value_placeholder: "%ajlb_lb_statistic_mob_kills_{pos}_alltime_value_formatted%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Mob Kills: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7mob kills leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
+
+  killstreaks:
+    name: "&c&lKILLSTREAKS"
+    icon: GOLDEN_HELMET
+    slot: -1
+    title: "Killstreaks | Page {page}/{max_page}"
+    description: "killstreaks"
+    value_label: "Killstreak"
+    type: PLAYER
+    internal_stat: "killstreak"
+    ajlb_name_placeholder: "%ajlb_lb_custom_killstreak_{pos}_name%"
+    ajlb_value_placeholder: "%ajlb_lb_custom_killstreak_{pos}_value%"
+    max_pages: 7
+    entry_title: "&a#{pos} {name}"
+    entry_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7Position: #{pos}"
+      - "&7Killstreak: &a{value}"
+    main_lore:
+      - "&7Leaderboard"
+      - ""
+      - "&7View the top players in the"
+      - "&7killstreaks leaderboard"
+      - ""
+      - "&e▶ &e&lCLICK &eto View"
