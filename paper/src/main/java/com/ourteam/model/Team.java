@@ -632,6 +632,47 @@ public class Team {
         return 1;
     }
 
+    public int getTotalKills() {
+        int total = 0;
+        for (MemberStats s : getMemberStatsMap().values()) total += s.getKills();
+        return total;
+    }
+
+    public int getTotalDeaths() {
+        int total = 0;
+        for (MemberStats s : getMemberStatsMap().values()) total += s.getDeaths();
+        return total;
+    }
+
+    public int getTotalBlocksPlaced() {
+        int total = 0;
+        for (MemberStats s : getMemberStatsMap().values()) total += s.getBlocksPlaced();
+        return total;
+    }
+
+    public int getTotalBlocksBroken() {
+        int total = 0;
+        for (MemberStats s : getMemberStatsMap().values()) total += s.getBlocksBroken();
+        return total;
+    }
+
+    public int getTotalMobKills() {
+        int total = 0;
+        for (MemberStats s : getMemberStatsMap().values()) total += s.getMobKills();
+        return total;
+    }
+
+    public double getKDR() {
+        int d = getTotalDeaths();
+        if (d == 0) return getTotalKills();
+        return Math.round(((double) getTotalKills() / d) * 100.0) / 100.0;
+    }
+
+    public int getTeamLevel() {
+        int score = getGrindingPoints() + (kills * 5);
+        return Math.max(1, 1 + (score / 100));
+    }
+
     public java.util.Map<String, MemberStats> getMemberStatsMap() {
         if (memberStatsMap == null) {
             memberStatsMap = new java.util.HashMap<>();
@@ -650,6 +691,9 @@ public class Team {
         private int grindingPoints = 0;
         private long joinTime = 0;
         private long playtimeMs = 0;
+        private int blocksPlaced = 0;
+        private int blocksBroken = 0;
+        private int mobKills = 0;
 
         public MemberStats() {
             this.joinTime = System.currentTimeMillis();
@@ -672,5 +716,17 @@ public class Team {
         public long getPlaytimeMs() { return playtimeMs; }
         public void addPlaytimeMs(long ms) { this.playtimeMs += ms; }
         public void setPlaytimeMs(long ms) { this.playtimeMs = ms; }
+
+        public int getBlocksPlaced() { return blocksPlaced; }
+        public void addBlocksPlaced() { this.blocksPlaced++; }
+        public void setBlocksPlaced(int blocksPlaced) { this.blocksPlaced = blocksPlaced; }
+
+        public int getBlocksBroken() { return blocksBroken; }
+        public void addBlocksBroken() { this.blocksBroken++; }
+        public void setBlocksBroken(int blocksBroken) { this.blocksBroken = blocksBroken; }
+
+        public int getMobKills() { return mobKills; }
+        public void addMobKill() { this.mobKills++; }
+        public void setMobKills(int mobKills) { this.mobKills = mobKills; }
     }
 }

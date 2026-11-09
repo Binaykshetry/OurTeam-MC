@@ -115,50 +115,115 @@ public class GUIListener implements Listener {
 
             int slot = event.getSlot();
             int maxSize = plugin.getGuiManager().getMenuSize("noteam", 27);
-            int createSlot = plugin.getGuiManager().getMenuSlot("noteam", "create-slot", 11, maxSize);
-            int listSlot = plugin.getGuiManager().getMenuSlot("noteam", "list-slot", 13, maxSize);
-            int invitationsSlot = plugin.getGuiManager().getMenuSlot("noteam", "invitations-slot", 15, maxSize);
+            int createSlot = plugin.getGuiManager().getMenuSlot("noteam", "create-slot", 14, maxSize);
+            int invitesSlot = plugin.getGuiManager().getMenuSlot("noteam", "invites-slot", 12, maxSize);
 
             if (slot == createSlot) {
-                // Create a New Team button
+                // Open confirmation dialog (Screenshot 2026-11-08 220043.png)
+                plugin.getGuiManager().openCreateConfirmMenu(player);
+            } else if (slot == invitesSlot) {
+                // View received invitations (Screenshot 2026-11-08 215957.png)
+                plugin.getGuiManager().openInvitesMenu(player, null, 1);
+            }
+            return;
+        }
+
+        // 1c. Check if clicking in Create Team Confirmation GUI
+        if ("create_confirm".equalsIgnoreCase(menu)) {
+            try {
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+            } catch (Exception e) {}
+
+            int slot = event.getSlot();
+            if (slot >= 0 && slot <= 3) {
+                // Cancel
+                plugin.getGuiManager().openNoTeamMenu(player);
+            } else if (slot == 4) {
+                // Confirm -> Prompt chat
                 player.closeInventory();
                 plugin.getActiveGeneralAction().put(player.getUniqueId(), "CREATE_TEAM");
-                player.sendMessage(plugin.colorize("&8&m========================================"));
-                player.sendMessage(plugin.colorize("&6&l          » TEAM CREATION «"));
-                player.sendMessage(plugin.colorize("&fPlease enter your desired **Team Name** in chat."));
-                player.sendMessage(plugin.colorize("&7Limit: 3 to 12 letters. Type &ccancel &7to abort."));
-                player.sendMessage(plugin.colorize("&8&m========================================"));
-            } else if (slot == listSlot) {
-                // View Active Teams Directory (Browse/Apply)
-                player.closeInventory();
-                plugin.getGuiManager().openTeamsListMenu(player);
-            } else if (slot == invitationsSlot) {
-                // View Invitations (prints active invites via chat)
-                player.closeInventory();
-                
-                java.util.List<Team> invitedTeams = new java.util.ArrayList<>();
-                for (Team t : plugin.getTeamManager().getAllTeams()) {
-                    if (t.hasInvite(player.getUniqueId())) {
-                        invitedTeams.add(t);
+                player.sendMessage(plugin.colorize("&6&lTEAMS &8» &7Write the team tag in the chat &8(Max Length 12)"));
+            }
+            return;
+        }
+
+        // Leaderboard Menus (accessible to everyone, no team required)
+        if ("leaderboard_main".equalsIgnoreCase(menu)) {
+            com.ourteam.leaderboard.LeaderboardManager lm = plugin.getLeaderboardManager();
+            if (lm != null) {
+                int clickedSlot = event.getSlot();
+                for (com.ourteam.leaderboard.LeaderboardCategory cat : lm.getCategories().values()) {
+                    if (cat.getSlot() == clickedSlot) {
+                        lm.openCategoryMenu(player, cat.getId(), 1);
+                        return;
                     }
                 }
-                
-                player.sendMessage(plugin.colorize("&8&m========================================"));
-                player.sendMessage(plugin.colorize("&d&l          » YOUR INVITATIONS «"));
-                if (invitedTeams.isEmpty()) {
-                    player.sendMessage(plugin.colorize("&7You do not have any pending team invitations."));
-                } else {
-                    player.sendMessage(plugin.colorize("&7You have been invited to join the following teams:"));
-                    for (Team t : invitedTeams) {
-                        player.sendMessage(plugin.colorize("&a- &b" + t.getName() + " &7- Click to accept: &e/team accept " + t.getName()));
+            }
+            return;
+        }
+
+        if ("leaderboard_category".equalsIgnoreCase(menu)) {
+            com.ourteam.leaderboard.LeaderboardManager lm = plugin.getLeaderboardManager();
+            if (lm != null) {
+                String catId = holder.getTeamName();
+                int page = holder.getPage();
+                com.ourteam.leaderboard.LeaderboardCategory cat = lm.getCategory(catId);
+                int clickedSlot = event.getSlot();
+                if (cat != null) {
+                    if (clickedSlot == lm.getPrevSlot()) {
+                        if (page > 1) {
+                            lm.openCategoryMenu(player, catId, page - 1);
+                        } else {
+                            try { player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.5f, 0.8f); } catch (Exception ignored) {}
+                        }
+                    } else if (clickedSlot == lm.getRefreshSlot()) {
+                        lm.clearCache(catId);
+                        lm.openCategoryMenu(player, catId, page);
+                    } else if (clickedSlot == lm.getNextSlot()) {
+                        if (page < cat.getMaxPages()) {
+                            lm.openCategoryMenu(player, catId, page + 1);
+                        } else {
+                            try { player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.5f, 0.8f); } catch (Exception ignored) {}
+                        }
+                    } else if (clickedSlot == lm.getBackSlot()) {
+                        lm.openMainMenu(player);
                     }
                 }
-                player.sendMessage(plugin.colorize("&8&m========================================"));
             }
             return;
         }
 
         Team team = plugin.getTeamManager().getTeamByName(holder.getTeamName());
+
+        // For menus that don't strictly require team (e.g. invites for non-team player)
+        if ("invites".equalsIgnoreCase(menu) && team == null) {
+            try {
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.5f, 1.0f);
+            } catch (Exception e) {}
+
+            int slot = event.getSlot();
+            int page = holder.getPage();
+
+            if (slot == 18) {
+                if (page > 1) plugin.getGuiManager().openInvitesMenu(player, null, page - 1);
+            } else if (slot == 22) {
+                plugin.getGuiManager().openNoTeamMenu(player);
+            } else if (slot == 26) {
+                plugin.getGuiManager().openInvitesMenu(player, null, page + 1);
+            } else if (slot >= 9 && slot <= 17) {
+                org.bukkit.inventory.ItemStack clickedItem = event.getCurrentItem();
+                if (clickedItem != null && clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasDisplayName()) {
+                    String targetName = org.bukkit.ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName());
+                    player.closeInventory();
+                    if (event.isRightClick()) {
+                        player.performCommand("team deny " + targetName);
+                    } else {
+                        player.performCommand("team accept " + targetName);
+                    }
+                }
+            }
+            return;
+        }
 
         if (team == null) {
             player.closeInventory();
@@ -177,35 +242,136 @@ public class GUIListener implements Listener {
 
         if ("main".equalsIgnoreCase(menu)) {
             int maxSlot = plugin.getGuiManager().getMenuSize("main", 27);
-            if (slot == plugin.getGuiManager().getMenuSlot("main", "bank-slot", 10, maxSlot)) {
+            int invitesSlot = plugin.getGuiManager().getMenuSlot("main", "invites-slot", 4, maxSlot);
+            int bankSlot = plugin.getGuiManager().getMenuSlot("main", "bank-slot", 10, maxSlot);
+            int statsSlot = plugin.getGuiManager().getMenuSlot("main", "stats-slot", 11, maxSlot);
+            int homeSlot = plugin.getGuiManager().getMenuSlot("main", "home-slot", 12, maxSlot);
+            int echestSlot = plugin.getGuiManager().getMenuSlot("main", "echest-slot", 13, maxSlot);
+            int membersSlot = plugin.getGuiManager().getMenuSlot("main", "members-slot", 14, maxSlot);
+            int settingsSlot = plugin.getGuiManager().getMenuSlot("main", "settings-slot", 15, maxSlot);
+            int alliesSlot = plugin.getGuiManager().getMenuSlot("main", "allies-slot", 16, maxSlot);
+
+            if (slot == invitesSlot) {
+                plugin.getGuiManager().openInvitesMenu(player, team, 1);
+            } else if (slot == bankSlot) {
                 if (!plugin.getConfig().getBoolean("team-bank.enable", true)) {
                     player.sendMessage(plugin.colorize("&cError: Team Bank feature is currently disabled by the server administration."));
                     return;
                 }
                 plugin.getGuiManager().openBankMenu(player, team);
-            } else if (slot == plugin.getGuiManager().getMenuSlot("main", "members-slot", 11, maxSlot)) {
-                plugin.getGuiManager().openMembersMenu(player, team);
-            } else if (slot == plugin.getGuiManager().getMenuSlot("main", "allies-slot", 12, maxSlot)) {
-                plugin.getGuiManager().openAlliesMenu(player, team);
-            } else if (slot == plugin.getGuiManager().getMenuSlot("main", "homes-warps-slot", 13, maxSlot)) {
-                if (team.getMultiHomes().isEmpty() && team.getMultiWarps().isEmpty()) {
-                    return;
+            } else if (slot == statsSlot) {
+                plugin.getGuiManager().openStatsMenu(player, team);
+            } else if (slot == homeSlot) {
+                if (team.hasHome() || !team.getMultiHomes().isEmpty()) {
+                    player.closeInventory();
+                    player.performCommand("team home");
+                } else {
+                    player.sendMessage(plugin.colorize("&c[OurTeam] Your team does not have a home set! Use &e/team sethome &cto set one."));
                 }
-                plugin.getGuiManager().openHomesWarpsMenu(player, team);
-            } else if (slot == plugin.getGuiManager().getMenuSlot("main", "echest-slot", 14, maxSlot)) {
+            } else if (slot == echestSlot) {
                 player.closeInventory();
                 player.performCommand("team echest");
-            } else if (slot == plugin.getGuiManager().getMenuSlot("main", "leaderboard-slot", 15, maxSlot)) {
-                plugin.getGuiManager().openLeaderboardMenu(player, team);
-            } else if (slot == plugin.getGuiManager().getMenuSlot("main", "settings-slot", 16, maxSlot)) {
+            } else if (slot == membersSlot) {
+                plugin.getGuiManager().openMembersMenu(player, team);
+            } else if (slot == settingsSlot) {
                 if (!team.isAdminOrHigher(player.getUniqueId()) && !player.isOp() && !player.hasPermission("ourteam.admin")) {
                     player.sendMessage(plugin.colorize("&cOnly Admin or Team Owners can modify team settings."));
                     return;
                 }
                 plugin.getGuiManager().openSettingsMenu(player, team);
-            } else if (slot == plugin.getGuiManager().getMenuSlot("main", "leave-slot", 18, maxSlot)) {
+            } else if (slot == alliesSlot) {
+                plugin.getGuiManager().openAlliesMenu(player, team, 1);
+            }
+        }
+
+        else if ("stats".equalsIgnoreCase(menu)) {
+            switch (slot) {
+                case 12: // Levels
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, "LEVELS", 1);
+                    break;
+                case 13: // Money
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, "MONEY", 1);
+                    break;
+                case 14: // Playtime
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, "PLAYTIME", 1);
+                    break;
+                case 20: // Kills
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, "KILLS", 1);
+                    break;
+                case 21: // Deaths
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, "DEATHS", 1);
+                    break;
+                case 22: // KDR
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, "KDR", 1);
+                    break;
+                case 23: // Placed Blocks
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, "PLACED_BLOCKS", 1);
+                    break;
+                case 24: // Broken Blocks
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, "BROKEN_BLOCKS", 1);
+                    break;
+                case 40: // Back
+                    plugin.getGuiManager().openMainMenu(player, team);
+                    break;
+            }
+        }
+
+        else if ("stats_detail".equalsIgnoreCase(menu)) {
+            int page = holder.getPage();
+            String category = holder.getExtraData();
+            if (slot == 18) {
+                if (page > 1) {
+                    plugin.getGuiManager().openStatsDetailMenu(player, team, category, page - 1);
+                }
+            } else if (slot == 22) {
+                plugin.getGuiManager().openStatsMenu(player, team);
+            } else if (slot == 26) {
+                plugin.getGuiManager().openStatsDetailMenu(player, team, category, page + 1);
+            }
+        }
+
+        else if ("allies".equalsIgnoreCase(menu)) {
+            int page = holder.getPage();
+            if (slot == 4) {
+                // Invite ally
                 player.closeInventory();
-                player.performCommand("team leave");
+                player.sendMessage(plugin.colorize("&6&lTEAMS &8» &7Write the team name to send an alliance proposal in chat &8(or type cancel)"));
+                plugin.getActiveGeneralAction().put(player.getUniqueId(), "ALLY_INVITE");
+            } else if (slot == 18) {
+                if (page > 1) plugin.getGuiManager().openAlliesMenu(player, team, page - 1);
+            } else if (slot == 22) {
+                plugin.getGuiManager().openMainMenu(player, team);
+            } else if (slot == 26) {
+                plugin.getGuiManager().openAlliesMenu(player, team, page + 1);
+            } else if (slot >= 9 && slot <= 17) {
+                org.bukkit.inventory.ItemStack clickedItem = event.getCurrentItem();
+                if (clickedItem != null && clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasDisplayName()) {
+                    String targetName = org.bukkit.ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName());
+                    player.closeInventory();
+                    player.performCommand("team ally " + targetName);
+                }
+            }
+        }
+
+        else if ("invites".equalsIgnoreCase(menu)) {
+            int page = holder.getPage();
+            if (slot == 18) {
+                if (page > 1) plugin.getGuiManager().openInvitesMenu(player, team, page - 1);
+            } else if (slot == 22) {
+                plugin.getGuiManager().openMainMenu(player, team);
+            } else if (slot == 26) {
+                plugin.getGuiManager().openInvitesMenu(player, team, page + 1);
+            } else if (slot >= 9 && slot <= 17) {
+                org.bukkit.inventory.ItemStack clickedItem = event.getCurrentItem();
+                if (clickedItem != null && clickedItem.hasItemMeta() && clickedItem.getItemMeta().hasDisplayName()) {
+                    String targetName = org.bukkit.ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName());
+                    player.closeInventory();
+                    if (event.isRightClick()) {
+                        player.performCommand("team decline " + targetName);
+                    } else {
+                        player.performCommand("team accept " + targetName);
+                    }
+                }
             }
         } 
         

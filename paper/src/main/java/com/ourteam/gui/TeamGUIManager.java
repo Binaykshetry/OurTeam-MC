@@ -110,135 +110,129 @@ public class TeamGUIManager {
 
     /**
      * Creates and opens the Main Team Dashboard (Menu: main)
+     * Matches the design in Screenshot 2026-11-08 220107.png / 220115.png
      */
     public void openMainMenu(Player player, Team team) {
-        String title = getMenuTitle("main", "&#33CCFFTeam Dashboard &7» &f" + team.getName(), team);
+        String title = getMenuTitle("main", "Teams | Menu", team);
         int size = getMenuSize("main", 27);
         TeamGUIHolder holder = new TeamGUIHolder("main", team.getName());
         Inventory inv = Bukkit.createInventory(holder, size, title);
 
         // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
+        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ");
         for (int i = 0; i < size; i++) {
             inv.setItem(i, marker);
         }
 
-        // Team Bank item placement
+        // Slot 4: TEAM INVITES (Red Bed)
+        int invitesSlot = getMenuSlot("main", "invites-slot", 4, size);
+        if (invitesSlot >= 0 && invitesSlot < size) {
+            inv.setItem(invitesSlot, createGuiItem(Material.RED_BED,
+                "&b&lTEAM INVITES",
+                "&7Description",
+                "",
+                "&fView who is being invited or",
+                "&frequests from your team!",
+                "",
+                "&6▶ &eCLICK to View"
+            ));
+        }
+
+        // Slot 10: TEAM BANK (Chest)
         int bankSlot = getMenuSlot("main", "bank-slot", 10, size);
-        boolean bankEnabled = plugin.getConfig().getBoolean("team-bank.enable", true);
         if (bankSlot >= 0 && bankSlot < size) {
-            if (bankEnabled) {
-                inv.setItem(bankSlot, createGuiItem(Material.GOLD_INGOT, 
-                    "&#FFCC00Team Bank Balance", 
-                    "&7Status: Economy Management",
-                    "",
-                    "&fBalance: &a$" + String.format("%,.2f", team.getBankBalance()),
-                    "",
-                    "&a▶ Click to open Bank Menu"
-                ));
-            } else {
-                inv.setItem(bankSlot, createGuiItem(Material.BARRIER, 
-                    "&c&lTeam Bank Balance &7(DISABLED)", 
-                    "&7Status: Economy Management &c(Disabled)",
-                    "",
-                    "&cThe Team Bank function has been disabled",
-                    "&cby the server administration.",
-                    ""
-                ));
-            }
-        }
-
-        // Team Members
-        int membersSlot = getMenuSlot("main", "members-slot", 11, size);
-        if (membersSlot >= 0 && membersSlot < size) {
-            inv.setItem(membersSlot, createMemberSkullItem(player, 
-                "&#CC66FFTeam Members &7(" + team.getMembers().size() + ")", 
-                "&7Status: Roster Management",
+            inv.setItem(bankSlot, createGuiItem(Material.CHEST,
+                "&6&lTEAM BANK",
+                "&7Description",
                 "",
-                "&fTotal Members: &e" + team.getMembers().size() + "/8",
+                "&fDeposit or withdraw funds",
+                "&ffrom your team treasury!",
                 "",
-                "&a▶ Click to view team members roster"
+                "&6▶ &eCLICK to View"
             ));
         }
 
-        // Ally Diplomacy / System
-        int alliesSlot = getMenuSlot("main", "allies-slot", 12, size);
-        if (alliesSlot >= 0 && alliesSlot < size) {
-            inv.setItem(alliesSlot, createGuiItem(Material.SHIELD, 
-                "&#33CCFFAlly Diplomacy Hub", 
-                "&7Status: Active Treaties & Pacts",
+        // Slot 11: TEAM STATS (Clock)
+        int statsSlot = getMenuSlot("main", "stats-slot", 11, size);
+        if (statsSlot >= 0 && statsSlot < size) {
+            inv.setItem(statsSlot, createGuiItem(Material.CLOCK,
+                "&b&lTEAM STATS",
+                "&7Description",
                 "",
-                "&fForm coalitions, declare non-aggression",
-                "&fpacts, and reinforce allied groups.",
+                "&fView team statistics",
+                "&ffor all the players in the team!",
                 "",
-                "&a▶ Click to manage team alliances"
+                "&6▶ &eCLICK to View"
             ));
         }
 
-        // Team Homes & Warps
-        int homesWarpsSlot = getMenuSlot("main", "homes-warps-slot", 13, size);
-        if (homesWarpsSlot >= 0 && homesWarpsSlot < size) {
-            inv.setItem(homesWarpsSlot, createGuiItem(Material.COMPASS, 
-                "&#FF3336Homes & Warp locations", 
-                "&7Status: Navigation Hub",
+        // Slot 12: TEAM HOME (Orange Bed)
+        int homeSlot = getMenuSlot("main", "home-slot", 12, size);
+        if (homeSlot >= 0 && homeSlot < size) {
+            inv.setItem(homeSlot, createGuiItem(Material.ORANGE_BED,
+                "&c&lTEAM HOME",
+                "&7Description",
                 "",
-                "&fTotal Homes Set: &e" + team.getMultiHomes().size(),
-                "&fTotal Warps Set: &b" + team.getMultiWarps().size(),
+                "&fSet a team home to strategically conquer",
+                "&fconquer other teams!",
                 "",
-                "&a▶ Click to open Homes & Warps Menu"
+                "&6▶ &eCLICK to View"
             ));
         }
 
-        // Team Enderchest
-        int echestSlot = getMenuSlot("main", "echest-slot", 14, size);
+        // Slot 13: TEAM ENDERCHEST (Ender Chest)
+        int echestSlot = getMenuSlot("main", "echest-slot", 13, size);
         if (echestSlot >= 0 && echestSlot < size) {
-            inv.setItem(echestSlot, createNamedSkullItem("MHF_Chest", 
-                "&#CC99FFTeam Shared Enderchest", 
-                "&7Status: Public vault of valuables",
+            inv.setItem(echestSlot, createGuiItem(Material.ENDER_CHEST,
+                "&9&lTEAM ENDERCHEST",
+                "&7Description",
                 "",
-                "&fSlots: &727 Slots",
+                "&fStore resources for the whole",
+                "&fteam to have access to!",
                 "",
-                "&a▶ Click to access virtual chest storage"
+                "&6▶ &eCLICK to View"
             ));
         }
 
-        // Team Statistics & Leaderboards
-        int leaderboardSlot = getMenuSlot("main", "leaderboard-slot", 15, size);
-        if (leaderboardSlot >= 0 && leaderboardSlot < size) {
-            double kdr = team.getDeaths() > 0 ? (double) team.getKills() / team.getDeaths() : team.getKills();
-            inv.setItem(leaderboardSlot, createGuiItem(Material.DIAMOND_SWORD, 
-                "&#FF3333Team Statistics & Leaderboards", 
-                "&7Status: Core Competitive Metrics",
+        // Slot 14: TEAM MEMBERS (Book)
+        int membersSlot = getMenuSlot("main", "members-slot", 14, size);
+        if (membersSlot >= 0 && membersSlot < size) {
+            inv.setItem(membersSlot, createGuiItem(Material.BOOK,
+                "&6&lTEAM MEMBERS",
+                "&7Description",
                 "",
-                "&fKills: &a" + team.getKills() + " &7| &fDeaths: &c" + team.getDeaths(),
-                "&fKDR: &e" + String.format("%.2f", kdr) + " Ratio",
-                "&fPoints: &6" + team.getGrindingPoints() + " pts",
+                "&fView all your current server",
+                "&fteam members!",
                 "",
-                "&e▶ Click to view Leaderboards"
+                "&6▶ &eCLICK to View"
             ));
         }
 
-        // Settings Menu Toggle
-        int settingsSlot = getMenuSlot("main", "settings-slot", 16, size);
+        // Slot 15: TEAM SETTINGS (Bell)
+        int settingsSlot = getMenuSlot("main", "settings-slot", 15, size);
         if (settingsSlot >= 0 && settingsSlot < size) {
-            inv.setItem(settingsSlot, createGuiItem(Material.COMPARATOR, 
-                "&#FF6600Team Settings Panel", 
-                "&7Status: Configurations",
+            inv.setItem(settingsSlot, createGuiItem(Material.BELL,
+                "&d&lTEAM SETTINGS",
+                "&7Description",
                 "",
-                "&fFriendly Fire: " + (team.isFriendlyFireEnabled() ? "&aON" : "&cOFF"),
+                "&fChange your team settings",
+                "&fwithin this menu!",
                 "",
-                "&a▶ Click to manage rules and toggles"
+                "&6▶ &eCLICK to View"
             ));
         }
 
-        // Leave Option (Slot 18 by default)
-        int leaveSlot = getMenuSlot("main", "leave-slot", 18, size);
-        if (leaveSlot >= 0 && leaveSlot < size) {
-            inv.setItem(leaveSlot, createNamedSkullItem("MHF_TNT",
-                "&#FF3333Leave Team Option",
-                "&7Abandon or quit this team.",
+        // Slot 16: TEAM ALLIES (Iron Sword)
+        int alliesSlot = getMenuSlot("main", "allies-slot", 16, size);
+        if (alliesSlot >= 0 && alliesSlot < size) {
+            inv.setItem(alliesSlot, createGuiItem(Material.IRON_SWORD,
+                "&e&lTEAM ALLIES",
+                "&7Description",
                 "",
-                "&c▶ Click to LEAVE the team safely"
+                "&fView your team allies so you",
+                "&fcan conquer the server!",
+                "",
+                "&6▶ &eCLICK to View"
             ));
         }
 
@@ -246,54 +240,460 @@ public class TeamGUIManager {
     }
 
     /**
-     * Creates and opens the Ally Diplomacy / System GUI (Menu: alliances)
+     * Creates and opens the Teams | Statistics Menu
+     * Matches Screenshot 2026-11-08 220248.png / 220254.png / 220300.png / etc.
+     */
+    public void openStatsMenu(Player player, Team team) {
+        String title = getMenuTitle("stats", "Teams | Statistics", team);
+        int size = getMenuSize("stats", 45);
+        TeamGUIHolder holder = new TeamGUIHolder("stats", team.getName());
+        Inventory inv = Bukkit.createInventory(holder, size, title);
+
+        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ");
+        for (int i = 0; i < size; i++) {
+            inv.setItem(i, marker);
+        }
+
+        // Row 1:
+        // Slot 12: LECTERN -> LEVELS
+        inv.setItem(12, createGuiItem(Material.LECTERN,
+            "&e&lLEVELS",
+            "&7Description",
+            "",
+            "&fClick on this item to",
+            "&fsee the level of your team.",
+            "",
+            "&6▶ &eCLICK to View"
+        ));
+
+        // Slot 13: GOLD_INGOT -> MONEY
+        inv.setItem(13, createGuiItem(Material.GOLD_INGOT,
+            "&e&lMONEY",
+            "&7Description",
+            "",
+            "&fClick on this item to",
+            "&fsee the Money of your team.",
+            "",
+            "&6▶ &eCLICK to View"
+        ));
+
+        // Slot 14: CLOCK -> PLAYTIME
+        inv.setItem(14, createGuiItem(Material.CLOCK,
+            "&b&lPLAYTIME",
+            "&7Description",
+            "",
+            "&fClick on this item to",
+            "&fsee the playtime of your team.",
+            "",
+            "&6▶ &eCLICK to View"
+        ));
+
+        // Row 2:
+        // Slot 20: DIAMOND_SWORD -> KILLS
+        inv.setItem(20, createGuiItem(Material.DIAMOND_SWORD,
+            "&9&lKILLS",
+            "&7Description",
+            "",
+            "&fClick on this item to",
+            "&fsee the Kills of your team.",
+            "",
+            "&6▶ &eCLICK to View"
+        ));
+
+        // Slot 21: DIAMOND_HELMET -> DEATHS
+        inv.setItem(21, createGuiItem(Material.DIAMOND_HELMET,
+            "&c&lDEATHS",
+            "&7Description",
+            "",
+            "&fClick on this item to",
+            "&fsee the Deaths of your team.",
+            "",
+            "&6▶ &eCLICK to View"
+        ));
+
+        // Slot 22: WOODEN_SWORD -> KDR
+        inv.setItem(22, createGuiItem(Material.WOODEN_SWORD,
+            "&6&lKDR",
+            "&7Description",
+            "",
+            "&fClick on this item to",
+            "&fsee the KDR of your team.",
+            "",
+            "&6▶ &eCLICK to View"
+        ));
+
+        // Slot 23: DIRT -> PLACED BLOCKS
+        inv.setItem(23, createGuiItem(Material.DIRT,
+            "&d&lPLACED BLOCKS",
+            "&7Description",
+            "",
+            "&fClick on this item to",
+            "&fsee the Placed Blocks of your team.",
+            "",
+            "&6▶ &eCLICK to View"
+        ));
+
+        // Slot 24: DIAMOND_PICKAXE -> BROKEN BLOCKS
+        inv.setItem(24, createGuiItem(Material.DIAMOND_PICKAXE,
+            "&9&lBROKEN BLOCKS",
+            "&7Description",
+            "",
+            "&fClick on this item to",
+            "&fsee the Broken Blocks of your team.",
+            "",
+            "&6▶ &eCLICK to View"
+        ));
+
+        // Row 4:
+        // Slot 40: BARRIER -> BACK
+        inv.setItem(40, createGuiItem(Material.BARRIER,
+            "&c&lBACK",
+            "&7Click to go back to the menu."
+        ));
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Creates and opens the Teams | Statistics Menu 1/1 (per-category stat detail)
+     * Matches Screenshot 2026-11-08 220348.png
+     */
+    public void openStatsDetailMenu(Player player, Team team, String category, int page) {
+        List<UUID> members = new ArrayList<>(team.getMembers());
+        int itemsPerPage = 18;
+        int maxPages = Math.max(1, (int) Math.ceil((double) Math.max(1, members.size()) / itemsPerPage));
+        if (page < 1) page = 1;
+        if (page > maxPages) page = maxPages;
+
+        String title = "Teams | Statistics Menu " + page + "/" + maxPages;
+        int size = 27;
+        TeamGUIHolder holder = new TeamGUIHolder("stats_detail", team.getName(), page, category);
+        Inventory inv = Bukkit.createInventory(holder, size, title);
+
+        int startIndex = (page - 1) * itemsPerPage;
+        int endIndex = Math.min(startIndex + itemsPerPage, members.size());
+
+        for (int i = startIndex; i < endIndex; i++) {
+            UUID memberUuid = members.get(i);
+            org.bukkit.OfflinePlayer offline = Bukkit.getOfflinePlayer(memberUuid);
+            String memberName = offline.getName() != null ? offline.getName() : "Player";
+            Team.MemberStats stats = team.getMemberStatsMap().computeIfAbsent(memberUuid.toString(), k -> new Team.MemberStats());
+
+            String statDisplay;
+            switch (category.toUpperCase()) {
+                case "LEVELS":
+                    int lvl = 1;
+                    if (offline.isOnline() && offline.getPlayer() != null) {
+                        lvl = offline.getPlayer().getLevel();
+                    } else {
+                        lvl = team.getTeamLevel();
+                    }
+                    statDisplay = "Level " + lvl;
+                    break;
+                case "MONEY":
+                    double bal = 0.0;
+                    if (plugin.getEconomy() != null) {
+                        bal = plugin.getEconomy().getBalance(offline);
+                    }
+                    statDisplay = "$" + String.format("%.0f", bal);
+                    break;
+                case "PLAYTIME":
+                    long ticks = 0;
+                    try {
+                        if (offline.isOnline() && offline.getPlayer() != null) {
+                            ticks = offline.getPlayer().getStatistic(org.bukkit.Statistic.PLAY_ONE_MINUTE);
+                        }
+                    } catch (Exception ignored) {}
+                    if (ticks == 0 && stats.getPlaytimeMs() > 0) {
+                        ticks = (stats.getPlaytimeMs() / 1000) * 20;
+                    }
+                    long totalSeconds = ticks / 20;
+                    long hours = totalSeconds / 3600;
+                    long minutes = (totalSeconds % 3600) / 60;
+                    if (hours > 0) {
+                        statDisplay = hours + "h " + minutes + "m";
+                    } else {
+                        statDisplay = Math.max(1, minutes) + "m";
+                    }
+                    break;
+                case "KILLS":
+                    statDisplay = stats.getKills() + " kills";
+                    break;
+                case "DEATHS":
+                    statDisplay = stats.getDeaths() + " deaths";
+                    break;
+                case "KDR":
+                    double kdr = stats.getDeaths() == 0 ? stats.getKills() : (double) stats.getKills() / stats.getDeaths();
+                    statDisplay = String.format("%.2f", kdr) + " KDR";
+                    break;
+                case "PLACED_BLOCKS":
+                    statDisplay = stats.getBlocksPlaced() + " placed blocks";
+                    break;
+                case "BROKEN_BLOCKS":
+                    statDisplay = stats.getBlocksBroken() + " broken blocks";
+                    break;
+                default:
+                    statDisplay = "0";
+                    break;
+            }
+
+            int slot = i - startIndex;
+            inv.setItem(slot, createPlayerSkullItem(offline,
+                "&9" + memberName,
+                "&fThis player has &a" + statDisplay + "&f."
+            ));
+        }
+
+        // Navigation (Row 2)
+        inv.setItem(18, createGuiItem(Material.RED_STAINED_GLASS_PANE,
+            "&c&lPREVIOUS PAGE",
+            "&7Description",
+            "",
+            "&6▶ &eCLICK to Previous"
+        ));
+
+        inv.setItem(22, createGuiItem(Material.BARRIER,
+            "&c&lBACK",
+            "&7Click to go back to statistics."
+        ));
+
+        inv.setItem(26, createGuiItem(Material.LIME_STAINED_GLASS_PANE,
+            "&a&lNEXT PAGE",
+            "&7Description",
+            "",
+            "&6▶ &eCLICK to Continue"
+        ));
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Creates and opens the Allies Menu (Menu: allies)
+     * Matches Screenshot 2026-11-08 220209.png
      */
     public void openAlliesMenu(Player player, Team team) {
-        String title = plugin.colorize("&#33CCFFAlly Diplomacy Hub");
-        TeamGUIHolder holder = new TeamGUIHolder("alliances", team.getName());
-        Inventory inv = Bukkit.createInventory(holder, 54, title);
+        openAlliesMenu(player, team, 1);
+    }
 
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < 9; i++) {
-            inv.setItem(i, marker);
-        }
-        for (int i = 45; i < 54; i++) {
-            inv.setItem(i, marker);
+    public void openAlliesMenu(Player player, Team team, int page) {
+        List<Team> allTeams = new ArrayList<>();
+        for (Team t : plugin.getTeamManager().getAllTeams()) {
+            if (!t.getName().equalsIgnoreCase(team.getName())) {
+                allTeams.add(t);
+            }
         }
 
-        // Slot 4: Info plaque
-        inv.setItem(4, createGuiItem(Material.NETHER_STAR,
-            "&#33CCFFAlliance & Diplomacy Overview",
-            "&7Collaborate with other peer groups on the server.",
+        int itemsPerPage = 9;
+        int maxPages = Math.max(1, (int) Math.ceil((double) Math.max(1, allTeams.size()) / itemsPerPage));
+        if (page < 1) page = 1;
+        if (page > maxPages) page = maxPages;
+
+        String title = "Allies | Menu " + page + "/" + maxPages;
+        int size = 27;
+        TeamGUIHolder holder = new TeamGUIHolder("allies", team.getName(), page);
+        Inventory inv = Bukkit.createInventory(holder, size, title);
+
+        // Slot 4: Player head -> INVITE ALLY (matching Screenshot 220209)
+        inv.setItem(4, createNamedSkullItem("MHF_OakLog",
+            "&e&lINVITE ALLY",
+            "&7Description",
             "",
-            "&f⚡ &7Allies cannot deal friendly fire to one another.",
-            "&f⚡ &7Form strong networks to coordinate base defense."
+            "&fInvite another team to form",
+            "&fan alliance!",
+            "",
+            "&6▶ &eCLICK to Invite"
         ));
 
-        // Slot 49: Return Arrow
-        inv.setItem(49, createGuiItem(Material.ARROW,
-            "&e◀ Return to Dashboard",
-            "&7Go back to main team GUI panel"
-        ));
+        int startIndex = (page - 1) * itemsPerPage;
+        int endIndex = Math.min(startIndex + itemsPerPage, allTeams.size());
 
-        // List other online/active teams in slots 9-44!
-        int slotIdx = 9;
-        java.util.List<Team> sorted = new java.util.ArrayList<>(plugin.getTeamManager().getAllTeams());
-        for (Team otherTeam : sorted) {
-            if (otherTeam.getName().equalsIgnoreCase(team.getName())) continue; // Skip own team
-            if (slotIdx > 44) break;
-
-            org.bukkit.OfflinePlayer owner = Bukkit.getOfflinePlayer(otherTeam.getOwner());
-            inv.setItem(slotIdx, createMemberSkullItem(owner, "&#33CCFF" + otherTeam.getName(),
-                "&7Status: Active Team",
-                "&fOwner: &e" + (owner.getName() != null ? owner.getName() : "Unknown"),
-                "&fMembers: &7" + otherTeam.getMembers().size() + "/8",
+        for (int i = startIndex; i < endIndex; i++) {
+            Team other = allTeams.get(i);
+            org.bukkit.OfflinePlayer owner = Bukkit.getOfflinePlayer(other.getOwner());
+            String ownerName = owner.getName() != null ? owner.getName() : "Unknown";
+            inv.setItem(9 + (i - startIndex), createGuiItem(Material.BOOK,
+                "&b&l" + other.getName(),
+                "&7Description",
                 "",
-                "&a▶ Click to send alliance proposal!"
+                "&fOwner: &a" + ownerName,
+                "&fMembers: &e" + other.getMembers().size() + "/8",
+                "",
+                "&6▶ &eCLICK to Ally"
             ));
-            slotIdx++;
         }
+
+        // Navigation (Row 2)
+        inv.setItem(18, createGuiItem(Material.RED_STAINED_GLASS_PANE,
+            "&c&lPREVIOUS PAGE",
+            "&7Description",
+            "",
+            "&6▶ &eCLICK to Previous"
+        ));
+
+        inv.setItem(22, createGuiItem(Material.BARRIER,
+            "&c&lBACK",
+            "&7Click to go back to the menu."
+        ));
+
+        inv.setItem(26, createGuiItem(Material.LIME_STAINED_GLASS_PANE,
+            "&a&lNEXT PAGE",
+            "&7Description",
+            "",
+            "&6▶ &eCLICK to Continue"
+        ));
+
+        player.openInventory(inv);
+    }
+
+    /**
+     * Creates and opens the Invites Menu (Menu: invites)
+     * Matches Screenshot 2026-11-08 215957.png
+     */
+    public void openInvitesMenu(Player player, Team team) {
+        openInvitesMenu(player, team, 1);
+    }
+
+    public void openInvitesMenu(Player player, Team team, int page) {
+        int size = 27;
+        int itemsPerPage = 9;
+
+        if (team == null) {
+            List<Team> invitedTeams = new ArrayList<>();
+            for (Team t : plugin.getTeamManager().getAllTeams()) {
+                if (t.hasInvite(player.getUniqueId())) {
+                    invitedTeams.add(t);
+                }
+            }
+
+            int maxPages = Math.max(1, (int) Math.ceil((double) Math.max(1, invitedTeams.size()) / itemsPerPage));
+            if (page < 1) page = 1;
+            if (page > maxPages) page = maxPages;
+
+            String title = "Teams | Invites " + page + "/" + maxPages;
+            TeamGUIHolder holder = new TeamGUIHolder("invites", "none", page);
+            Inventory inv = Bukkit.createInventory(holder, size, title);
+
+            int startIndex = (page - 1) * itemsPerPage;
+            int endIndex = Math.min(startIndex + itemsPerPage, invitedTeams.size());
+
+            for (int i = startIndex; i < endIndex; i++) {
+                Team t = invitedTeams.get(i);
+                inv.setItem(9 + (i - startIndex), createGuiItem(Material.PAPER,
+                    "&b&l" + t.getName(),
+                    "&7Description",
+                    "",
+                    "&fYou have been invited to join!",
+                    "",
+                    "&a▶ LEFT-CLICK to Accept",
+                    "&c▶ RIGHT-CLICK to Decline"
+                ));
+            }
+
+            // Navigation
+            inv.setItem(18, createGuiItem(Material.RED_STAINED_GLASS_PANE,
+                "&c&lPREVIOUS PAGE",
+                "&7Description",
+                "",
+                "&6▶ &eCLICK to Previous"
+            ));
+
+            inv.setItem(22, createGuiItem(Material.BARRIER,
+                "&c&lBACK",
+                "&7Click to go back."
+            ));
+
+            inv.setItem(26, createGuiItem(Material.LIME_STAINED_GLASS_PANE,
+                "&a&lNEXT PAGE",
+                "&7Description",
+                "",
+                "&6▶ &eCLICK to Continue"
+            ));
+
+            player.openInventory(inv);
+        } else {
+            List<UUID> requests = new ArrayList<>(team.getRequests());
+            int maxPages = Math.max(1, (int) Math.ceil((double) Math.max(1, requests.size()) / itemsPerPage));
+            if (page < 1) page = 1;
+            if (page > maxPages) page = maxPages;
+
+            String title = "Teams | Invites " + page + "/" + maxPages;
+            TeamGUIHolder holder = new TeamGUIHolder("invites", team.getName(), page);
+            Inventory inv = Bukkit.createInventory(holder, size, title);
+
+            int startIndex = (page - 1) * itemsPerPage;
+            int endIndex = Math.min(startIndex + itemsPerPage, requests.size());
+
+            for (int i = startIndex; i < endIndex; i++) {
+                UUID reqUuid = requests.get(i);
+                org.bukkit.OfflinePlayer reqOffline = Bukkit.getOfflinePlayer(reqUuid);
+                String reqName = reqOffline.getName() != null ? reqOffline.getName() : "Requester";
+                inv.setItem(9 + (i - startIndex), createPlayerSkullItem(reqOffline,
+                    "&b&l" + reqName,
+                    "&7Description",
+                    "",
+                    "&fRequested to join your team!",
+                    "",
+                    "&a▶ LEFT-CLICK to Accept",
+                    "&c▶ RIGHT-CLICK to Decline"
+                ));
+            }
+
+            // Navigation
+            inv.setItem(18, createGuiItem(Material.RED_STAINED_GLASS_PANE,
+                "&c&lPREVIOUS PAGE",
+                "&7Description",
+                "",
+                "&6▶ &eCLICK to Previous"
+            ));
+
+            inv.setItem(22, createGuiItem(Material.BARRIER,
+                "&c&lBACK",
+                "&7Click to go back."
+            ));
+
+            inv.setItem(26, createGuiItem(Material.LIME_STAINED_GLASS_PANE,
+                "&a&lNEXT PAGE",
+                "&7Description",
+                "",
+                "&6▶ &eCLICK to Continue"
+            ));
+
+            player.openInventory(inv);
+        }
+    }
+
+    /**
+     * Creates and opens the Confirmation GUI for team creation (Menu: create_confirm)
+     * Matches Screenshot 2026-11-08 220043.png / 220051.png
+     */
+    public void openCreateConfirmMenu(Player player) {
+        String title = getMenuTitle("create_confirm", "Teams | Create new team");
+        int size = getMenuSize("create_confirm", 9);
+        TeamGUIHolder holder = new TeamGUIHolder("create_confirm", "none");
+        Inventory inv = Bukkit.createInventory(holder, size, title);
+
+        ItemStack cancelItem = createGuiItem(Material.RED_STAINED_GLASS_PANE,
+            "&c&lCANCEL",
+            "&7Description",
+            "",
+            "&fClick to cancel the action.",
+            "",
+            "&6▶ &eCLICK to Cancel"
+        );
+
+        for (int i = 0; i < 4; i++) {
+            inv.setItem(i, cancelItem);
+        }
+
+        int confirmSlot = getMenuSlot("create_confirm", "confirm-slot", 4, size);
+        inv.setItem(confirmSlot, createGuiItem(Material.LIME_STAINED_GLASS_PANE,
+            "&a&lCONFIRM",
+            "&7Description",
+            "",
+            "&fClick to confirm the action.",
+            "",
+            "&6▶ &eCLICK to Confirm"
+        ));
 
         player.openInventory(inv);
     }
@@ -496,7 +896,7 @@ public class TeamGUIManager {
             String role = team.getRole(memberId);
             String status = offlinePlayer.isOnline() ? "&2● Online" : "&7○ Offline";
 
-            inv.setItem(slotIdx, createMemberSkullItem(offlinePlayer, "&#33CCFF" + name,
+            inv.setItem(slotIdx, createPlayerSkullItem(offlinePlayer, "&#33CCFF" + name,
                 "&7Status: " + status,
                 "&fRole: &b" + role,
                 "",
@@ -551,11 +951,9 @@ public class TeamGUIManager {
         if (ledgerSlot >= 0 && ledgerSlot < size) {
             inv.setItem(ledgerSlot, createMemberSkullItem(Bukkit.getOfflinePlayer(team.getOwner()), 
                 "&#FFCC00&lAccount Balance Info", 
-                "&7Bank details & interest stats",
+                "&7Bank details & balance specs",
                 "",
                 "&fLEDGER: &e$" + String.format("%,.2f", team.getBankBalance()),
-                "&fInterest Rate: &b" + plugin.getConfig().getDouble("team-bank.interest-rate", 5.0) + "% accrual",
-                "&fMax Accrual Cap: &b$" + plugin.getConfig().getDouble("team-bank.max-accrual", 15.0),
                 ""
             ));
         }
@@ -929,6 +1327,10 @@ public class TeamGUIManager {
      * Creates and opens the Team Leaderboard GUI (Menu: leaderboard)
      */
     public void openLeaderboardMenu(Player player, Team viewerTeam) {
+        if (plugin.getLeaderboardManager() != null) {
+            plugin.getLeaderboardManager().openMainMenu(player);
+            return;
+        }
         String title = getMenuTitle("leaderboard", "&#33CCFFLeaderboard &7- &#A9C9FFTop Teams", viewerTeam);
         int size = getMenuSize("leaderboard", 54);
         TeamGUIHolder holder = new TeamGUIHolder("leaderboard", viewerTeam != null ? viewerTeam.getName() : "none");
@@ -1169,53 +1571,39 @@ public class TeamGUIManager {
 
     /**
      * Creates and opens the No Team / Creation Hub GUI (Menu: noteam)
+     * Matches Screenshot 2026-11-08 215943.png / 220015.png
      */
     public void openNoTeamMenu(Player player) {
-        String title = getMenuTitle("noteam", "&#33CCFFTeam Hub &7» &fDiscovery");
+        String title = getMenuTitle("noteam", "Teams | Menu");
         int size = getMenuSize("noteam", 27);
         TeamGUIHolder holder = new TeamGUIHolder("noteam", "none");
         Inventory inv = Bukkit.createInventory(holder, size, title);
 
-        // Fill background with decorative panes
-        ItemStack marker = createGuiItem(Material.GRAY_STAINED_GLASS_PANE, " ", "&7Decoration slot");
-        for (int i = 0; i < size; i++) {
-            inv.setItem(i, marker);
+        // Slot 12: Chest -> TEAM INVITES
+        int invitesSlot = getMenuSlot("noteam", "invites-slot", 12, size);
+        if (invitesSlot >= 0 && invitesSlot < size) {
+            inv.setItem(invitesSlot, createGuiItem(Material.CHEST,
+                "&b&lTEAM INVITES",
+                "&7Description",
+                "",
+                "&fView who is being invited or",
+                "&frequests from your team!",
+                "",
+                "&6▶ &eCLICK to View"
+            ));
         }
 
-        // Slot: Create a New Team
-        int createSlot = getMenuSlot("noteam", "create-slot", 11, size);
+        // Slot 14: Lime Bed -> CREATE TEAM
+        int createSlot = getMenuSlot("noteam", "create-slot", 14, size);
         if (createSlot >= 0 && createSlot < size) {
-            inv.setItem(createSlot, createMemberSkullItem(player,
-                "&#33CCFF&lCreate a New Team",
-                "&7Form an organization to pool your efforts,",
-                "&7protect your lands, trade with bank interest,",
-                "&7and conquer team leaderboards!",
+            inv.setItem(createSlot, createGuiItem(Material.LIME_BED,
+                "&a&lCREATE TEAM",
+                "&7Description",
                 "",
-                "&a▶ Click to start creation process"
-            ));
-        }
-
-        // Slot: View Active Teams Directory
-        int listSlot = getMenuSlot("noteam", "list-slot", 13, size);
-        if (listSlot >= 0 && listSlot < size) {
-            inv.setItem(listSlot, createNamedSkullItem("MHF_Question",
-                "&#FFCC00&lActive Teams Directory",
-                "&7Expand your network! Look through all existing",
-                "&7teams, and submit a Join Request to join one.",
+                "&fCreate or leave your team and",
+                "&fconquer the server!",
                 "",
-                "&e▶ Click to browse active teams"
-            ));
-        }
-
-        // Slot: Your Received Invitations & Options
-        int invitationsSlot = getMenuSlot("noteam", "invitations-slot", 15, size);
-        if (invitationsSlot >= 0 && invitationsSlot < size) {
-            inv.setItem(invitationsSlot, createNamedSkullItem("MHF_Exclamation",
-                "&#CC66FF&lYour Invitations",
-                "&7See teams that have invited you, or requests",
-                "&7that you have pending.",
-                "",
-                "&d▶ Click to view active invites"
+                "&6▶ &eCLICK to Continue"
             ));
         }
 
@@ -1223,11 +1611,13 @@ public class TeamGUIManager {
     }
 
     /* Interface helpers */
-    private ItemStack createGuiItem(Material material, String name, String... lore) {
+    public ItemStack createGuiItem(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(plugin.colorize(name));
+            if (name != null) {
+                meta.setDisplayName(plugin.colorize(name));
+            }
             List<String> coloredLore = new ArrayList<>();
             for (String line : lore) {
                 coloredLore.add(plugin.colorize(line));
@@ -1238,43 +1628,47 @@ public class TeamGUIManager {
         return item;
     }
 
-    private ItemStack createMemberSkullItem(org.bukkit.OfflinePlayer player, String name, String... lore) {
-        Material mat = Material.BOOK;
-        if (name != null) {
-            String strip = name.replaceAll("(?i)&[0-9a-fk-orx]", "").replaceAll("(?i)#[0-9a-f]{6}", "").toLowerCase();
-            if (strip.contains("create") || strip.contains("apply") || strip.contains("join")) {
-                mat = Material.EMERALD;
-            } else if (strip.contains("deposit")) {
-                mat = Material.EMERALD;
-            } else if (strip.contains("withdraw")) {
-                mat = Material.REDSTONE;
-            } else if (strip.contains("balance") || strip.contains("ledger") || strip.contains("info")) {
-                mat = Material.BOOK;
-            } else if (strip.contains("team") || strip.contains("alliance")) {
-                mat = Material.SHIELD;
-            } else {
-                mat = Material.BOOK;
-            }
-        }
-        return createGuiItem(mat, name, lore);
+    public ItemStack createMemberSkullItem(org.bukkit.OfflinePlayer player, String name, String... lore) {
+        return createPlayerSkullItem(player, name, lore);
     }
 
-    private ItemStack createNamedSkullItem(String playerName, String name, String... lore) {
-        Material mat = Material.BOOK;
-        if (playerName != null) {
-            String lowerPlayer = playerName.toLowerCase();
-            if (lowerPlayer.contains("arrow")) {
-                mat = Material.ARROW;
-            } else if (lowerPlayer.contains("chest")) {
-                mat = Material.ENDER_CHEST;
-            } else if (lowerPlayer.contains("tnt")) {
-                mat = Material.TNT;
-            } else if (lowerPlayer.contains("question")) {
-                mat = Material.BOOK;
-            } else if (lowerPlayer.contains("exclamation")) {
-                mat = Material.WRITABLE_BOOK;
+    public ItemStack createPlayerSkullItem(org.bukkit.OfflinePlayer player, String name, String... lore) {
+        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) item.getItemMeta();
+        if (meta != null) {
+            if (player != null) {
+                meta.setOwningPlayer(player);
             }
+            if (name != null) {
+                meta.setDisplayName(plugin.colorize(name));
+            }
+            List<String> coloredLore = new ArrayList<>();
+            for (String line : lore) {
+                coloredLore.add(plugin.colorize(line));
+            }
+            meta.setLore(coloredLore);
+            item.setItemMeta(meta);
         }
-        return createGuiItem(mat, name, lore);
+        return item;
+    }
+
+    public ItemStack createNamedSkullItem(String playerName, String name, String... lore) {
+        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) item.getItemMeta();
+        if (meta != null) {
+            if (playerName != null && !playerName.isEmpty()) {
+                meta.setOwningPlayer(Bukkit.getOfflinePlayer(playerName));
+            }
+            if (name != null) {
+                meta.setDisplayName(plugin.colorize(name));
+            }
+            List<String> coloredLore = new ArrayList<>();
+            for (String line : lore) {
+                coloredLore.add(plugin.colorize(line));
+            }
+            meta.setLore(coloredLore);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 }

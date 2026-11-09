@@ -101,9 +101,19 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
             case "gui": {
                 Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
                 if (team == null) {
-                    player.sendMessage(plugin.colorize("&cYou must be in a team to open the menu."));
+                    plugin.getGuiManager().openNoTeamMenu(player);
                 } else {
                     plugin.getGuiManager().openMainMenu(player, team);
+                }
+                break;
+            }
+            case "stats":
+            case "statistics": {
+                Team team = plugin.getTeamManager().getPlayerTeam(player.getUniqueId());
+                if (team == null) {
+                    player.sendMessage(plugin.colorize("&cYou must belong to a team first!"));
+                } else {
+                    plugin.getGuiManager().openStatsMenu(player, team);
                 }
                 break;
             }

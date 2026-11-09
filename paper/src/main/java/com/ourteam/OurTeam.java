@@ -21,6 +21,7 @@ public final class OurTeam extends JavaPlugin {
 
     private TeamManager teamManager;
     private com.ourteam.gui.TeamGUIManager guiManager;
+    private com.ourteam.leaderboard.LeaderboardManager leaderboardManager;
     private FileConfiguration messagesConfig;
     private File messagesFile;
     private FileConfiguration teamPermissionsConfig;
@@ -60,6 +61,16 @@ public final class OurTeam extends JavaPlugin {
             }
         }
 
+        // Save default LeaderboardGUI template if it doesn't exist
+        File lbDir = new File(getDataFolder(), "LeaderboardGUI");
+        if (!lbDir.exists()) {
+            lbDir.mkdirs();
+        }
+        File lbFile = new File(lbDir, "leaderboards.yml");
+        if (!lbFile.exists()) {
+            saveResource("LeaderboardGUI/leaderboards.yml", false);
+        }
+
         // Initialize directories
         File extensionsDir = new File(getDataFolder(), "extensions");
         if (!extensionsDir.exists()) {
@@ -78,6 +89,7 @@ public final class OurTeam extends JavaPlugin {
         // Initialize managers
         this.teamManager = new TeamManager(this);
         this.guiManager = new com.ourteam.gui.TeamGUIManager(this);
+        this.leaderboardManager = new com.ourteam.leaderboard.LeaderboardManager(this);
 
         // Register Commands
         TeamCommand teamCmd = new TeamCommand(this);
@@ -86,6 +98,11 @@ public final class OurTeam extends JavaPlugin {
         AdminCommand adminCmd = new AdminCommand(this);
         getCommand("adminteam").setExecutor(adminCmd);
         getCommand("adminteam").setTabCompleter(adminCmd);
+        com.ourteam.commands.LeaderboardCommand lbCmd = new com.ourteam.commands.LeaderboardCommand(this);
+        if (getCommand("leaderboard") != null) {
+            getCommand("leaderboard").setExecutor(lbCmd);
+            getCommand("leaderboard").setTabCompleter(lbCmd);
+        }
 
         // Register Listeners
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
@@ -535,5 +552,9 @@ public final class OurTeam extends JavaPlugin {
                 player.sendMessage(colorize("&c[OurTeam] Teleportation cancelled: You moved!"));
             }
         }
+    }
+
+    public com.ourteam.leaderboard.LeaderboardManager getLeaderboardManager() {
+        return leaderboardManager;
     }
 }

@@ -145,6 +145,9 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
 
     private void handleReload(CommandSender sender) {
         plugin.reloadConfig();
+        if (plugin.getLeaderboardManager() != null) {
+            plugin.getLeaderboardManager().load();
+        }
         sender.sendMessage(plugin.getMsg("config-reloaded"));
         logAction(sender.getName(), "RELOAD", "SYSTEM", "Reloaded configs and messages successfully.");
     }

@@ -363,6 +363,10 @@ public class PlayerListener implements Listener {
                     player.sendMessage(plugin.getMsg("team-created").replace("{team}", team.getName()));
                     plugin.updateTabFormatting(player);
                 });
+            } else if (action.equalsIgnoreCase("ALLY_INVITE")) {
+                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                    player.performCommand("team ally " + text);
+                });
             }
             return;
         }
@@ -431,6 +435,10 @@ public class PlayerListener implements Listener {
     public void onPlayerDeath(org.bukkit.event.entity.PlayerDeathEvent event) {
         Player victim = event.getEntity();
         Player killer = victim.getKiller();
+
+        // Record player death into global tracking
+        plugin.getTeamManager().recordPlayerDeath(victim);
+
         if (killer == null) {
             return;
         }
@@ -438,6 +446,9 @@ public class PlayerListener implements Listener {
         if (killer.getUniqueId().equals(victim.getUniqueId())) {
             return;
         }
+
+        // Record player kill into global tracking
+        plugin.getTeamManager().recordPlayerKill(killer, victim);
 
         Team killerTeam = plugin.getTeamManager().getPlayerTeam(killer.getUniqueId());
         Team victimTeam = plugin.getTeamManager().getPlayerTeam(victim.getUniqueId());
@@ -486,6 +497,17 @@ public class PlayerListener implements Listener {
         }
     }
 
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityDeath(org.bukkit.event.entity.EntityDeathEvent event) {
+        if (event.getEntity() instanceof Player) {
+            return;
+        }
+        Player killer = event.getEntity().getKiller();
+        if (killer != null) {
+            plugin.getTeamManager().recordMobKill(killer);
+        }
+    }
+
     @EventHandler
     public void onPlayerMove(org.bukkit.event.player.PlayerMoveEvent event) {
         if (event.getFrom().getBlockX() != event.getTo().getBlockX() ||
@@ -512,5 +534,15 @@ public class PlayerListener implements Listener {
                 }
             }
         }
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockPlace(org.bukkit.event.block.BlockPlaceEvent event) {
+        plugin.getTeamManager().recordBlockPlace(event.getPlayer());
+    }
+
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockBreak(org.bukkit.event.block.BlockBreakEvent event) {
+        plugin.getTeamManager().recordBlockBreak(event.getPlayer());
     }
 }

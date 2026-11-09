@@ -15,6 +15,7 @@ public class TeamManager {
     private final Map<UUID, Team> teams; // Team ID -> Team
     private final Map<UUID, UUID> playerTeamMap; // Player UUID -> Team ID
     private final Set<UUID> teamChatToggle; // Players toggled into team-chat channel
+    private final Map<UUID, com.ourteam.model.PlayerStats> playerStatsMap;
 
     public TeamManager(OurTeam plugin) {
         this.plugin = plugin;
@@ -22,8 +23,101 @@ public class TeamManager {
         this.teams = storageManager.loadTeams();
         this.playerTeamMap = new HashMap<>();
         this.teamChatToggle = new HashSet<>();
+        this.playerStatsMap = storageManager.loadPlayers();
+
+        // Populate / sync playerStatsMap with team member stats
+        for (Team team : teams.values()) {
+            for (Map.Entry<String, Team.MemberStats> entry : team.getMemberStatsMap().entrySet()) {
+                try {
+                    UUID u = UUID.fromString(entry.getKey());
+                    Team.MemberStats ms = entry.getValue();
+                    com.ourteam.model.PlayerStats ps = playerStatsMap.computeIfAbsent(u, k -> new com.ourteam.model.PlayerStats(u, org.bukkit.Bukkit.getOfflinePlayer(u).getName()));
+                    if (ms.getBlocksPlaced() > ps.getBlocksPlaced()) ps.setBlocksPlaced(ms.getBlocksPlaced());
+                    if (ms.getBlocksBroken() > ps.getBlocksBroken()) ps.setBlocksBroken(ms.getBlocksBroken());
+                    if (ms.getMobKills() > ps.getMobKills()) ps.setMobKills(ms.getMobKills());
+                    if (ms.getKills() > ps.getKills()) ps.setKills(ms.getKills());
+                    if (ms.getDeaths() > ps.getDeaths()) ps.setDeaths(ms.getDeaths());
+                } catch (Exception ignored) {}
+            }
+        }
+
         rebuildPlayerMapping();
         recalculateAllScores();
+    }
+
+    public com.ourteam.model.PlayerStats getOrCreatePlayerStats(UUID uuid, String name) {
+        com.ourteam.model.PlayerStats ps = playerStatsMap.computeIfAbsent(uuid, k -> new com.ourteam.model.PlayerStats(uuid, name));
+        if (name != null && !name.equalsIgnoreCase(ps.getPlayerName())) {
+            ps.setPlayerName(name);
+        }
+        return ps;
+    }
+
+    public com.ourteam.model.PlayerStats getPlayerStats(UUID uuid) {
+        if (playerStatsMap.containsKey(uuid)) {
+            return playerStatsMap.get(uuid);
+        }
+        org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(uuid);
+        return getOrCreatePlayerStats(uuid, op.getName());
+    }
+
+    public Collection<com.ourteam.model.PlayerStats> getAllPlayerStats() {
+        return playerStatsMap.values();
+    }
+
+    public void recordBlockPlace(Player player) {
+        com.ourteam.model.PlayerStats ps = getOrCreatePlayerStats(player.getUniqueId(), player.getName());
+        ps.addBlockPlaced();
+        Team team = getPlayerTeam(player.getUniqueId());
+        if (team != null) {
+            Team.MemberStats ms = team.getMemberStatsMap().computeIfAbsent(player.getUniqueId().toString(), k -> new Team.MemberStats());
+            ms.addBlocksPlaced();
+        }
+        savePlayerAsync(ps);
+    }
+
+    public void recordBlockBreak(Player player) {
+        com.ourteam.model.PlayerStats ps = getOrCreatePlayerStats(player.getUniqueId(), player.getName());
+        ps.addBlockBroken();
+        Team team = getPlayerTeam(player.getUniqueId());
+        if (team != null) {
+            Team.MemberStats ms = team.getMemberStatsMap().computeIfAbsent(player.getUniqueId().toString(), k -> new Team.MemberStats());
+            ms.addBlocksBroken();
+        }
+        savePlayerAsync(ps);
+    }
+
+    public void recordMobKill(Player player) {
+        com.ourteam.model.PlayerStats ps = getOrCreatePlayerStats(player.getUniqueId(), player.getName());
+        ps.addMobKill();
+        Team team = getPlayerTeam(player.getUniqueId());
+        if (team != null) {
+            Team.MemberStats ms = team.getMemberStatsMap().computeIfAbsent(player.getUniqueId().toString(), k -> new Team.MemberStats());
+            ms.addMobKill();
+        }
+        savePlayerAsync(ps);
+    }
+
+    public void recordPlayerKill(Player killer, Player victim) {
+        com.ourteam.model.PlayerStats kPs = getOrCreatePlayerStats(killer.getUniqueId(), killer.getName());
+        kPs.addKill();
+        savePlayerAsync(kPs);
+
+        com.ourteam.model.PlayerStats vPs = getOrCreatePlayerStats(victim.getUniqueId(), victim.getName());
+        vPs.addDeath();
+        savePlayerAsync(vPs);
+    }
+
+    public void recordPlayerDeath(Player victim) {
+        com.ourteam.model.PlayerStats vPs = getOrCreatePlayerStats(victim.getUniqueId(), victim.getName());
+        vPs.addDeath();
+        savePlayerAsync(vPs);
+    }
+
+    public void savePlayerAsync(com.ourteam.model.PlayerStats ps) {
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            storageManager.savePlayer(ps);
+        });
     }
 
     public void recalculateAllScores() {
